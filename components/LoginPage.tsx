@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sprout, Droplets, Eye, EyeOff, Leaf } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -125,9 +126,9 @@ const LoginPage: React.FC = () => {
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
           <p className="text-sm text-gray-600">
             Chưa có tài khoản?{' '}
-            <a href="#" className="text-green-600 hover:text-green-700 font-bold hover:underline ml-1 transition-colors">
+            <Link to="/auth/register" className="text-green-600 hover:text-green-700 font-bold hover:underline ml-1 transition-colors">
               Đăng ký ngay
-            </a>
+            </Link>
           </p>
         </div>
 
