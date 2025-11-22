@@ -1,10 +1,10 @@
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 
 const App: React.FC = () => {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Routes>
         {/* Redirect root to the requested auth/login path */}
         <Route path="/" element={<Navigate to="/auth/login" replace />} />
@@ -15,7 +15,7 @@ const App: React.FC = () => {
         {/* Fallback for other routes */}
         <Route path="*" element={<div className="flex items-center justify-center h-screen text-gray-500">Page not found</div>} />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 
