@@ -61,7 +61,7 @@ const LoginPage: React.FC = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Nhập tên đăng nhập hoặc email"
+                placeholder="Nhập tên đăng nhập"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                 required
               />
@@ -115,13 +115,6 @@ const LoginPage: React.FC = () => {
               'Đăng Nhập'
             )}
           </button>
-
-          {/* Forgot Password */}
-          <div className="text-center">
-            <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline">
-              Quên mật khẩu?
-            </a>
-          </div>
         </form>
 
         {/* Footer */}

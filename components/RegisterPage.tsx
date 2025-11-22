@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Sprout, Droplets, Eye, EyeOff, Leaf, UserPlus, Mail, User, Lock, CheckCircle } from 'lucide-react';
+import { Sprout, Eye, EyeOff, Leaf, UserPlus, User, Lock, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     password: '',
     confirmPassword: ''
   });
@@ -85,28 +84,6 @@ const RegisterPage: React.FC = () => {
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="Chọn tên đăng nhập"
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Email Input */}
-          <div className="space-y-1">
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
-              Email
-            </label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-              </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Nhập địa chỉ email của bạn"
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                 required
               />
