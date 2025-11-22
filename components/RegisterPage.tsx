@@ -33,9 +33,12 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
     setError('');
 
+    // CẤU HÌNH API URL - Hardcode trực tiếp
+    const API_URL = 'http://localhost:8000/api/users/register';
+
     try {
-      console.log("DEBUG: Gửi request register...");
-      const response = await fetch('/api/users/register', {
+      console.log(`DEBUG: Gửi request register đến ${API_URL}...`);
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,7 +70,12 @@ const RegisterPage: React.FC = () => {
       navigate('/auth/login');
     } catch (err: any) {
       console.error("Register error:", err);
-      setError(err.message || 'Có lỗi xảy ra khi đăng ký.');
+      // Kiểm tra lỗi CORS
+      if (err.message === 'Failed to fetch') {
+         setError('Lỗi kết nối: Không thể gọi đến Backend. Vui lòng kiểm tra Backend (CORS) hoặc địa chỉ IP.');
+      } else {
+         setError(err.message || 'Có lỗi xảy ra khi đăng ký.');
+      }
     } finally {
       setIsLoading(false);
     }

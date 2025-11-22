@@ -15,11 +15,16 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     setError('');
 
+    // CẤU HÌNH API URL
+    // Lưu ý: Nếu bạn chạy backend trên Windows và frontend trên Ubuntu (WSL2), 
+    // localhost thường vẫn hoạt động. Nếu không, hãy thay localhost bằng IP của máy Windows (ví dụ: 192.168.1.x)
+    const API_URL = 'http://localhost:8000/api/users/login';
+
     try {
       console.log("DEBUG: Bắt đầu đăng nhập...");
-      console.log(`DEBUG: Gửi request đến /api/users/login với username: ${username}`);
+      console.log(`DEBUG: Gửi request đến ${API_URL} với username: ${username}`);
 
-      const response = await fetch('/api/users/login', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +82,12 @@ const LoginPage: React.FC = () => {
 
     } catch (err: any) {
       console.error("Lỗi đăng nhập chi tiết:", err);
-      setError(err.message || 'Không thể kết nối đến máy chủ.');
+      // Kiểm tra lỗi CORS phổ biến
+      if (err.message === 'Failed to fetch') {
+        setError('Không thể kết nối đến Backend. Vui lòng kiểm tra xem Backend đã bật (CORS) chưa và URL có đúng không.');
+      } else {
+        setError(err.message || 'Không thể kết nối đến máy chủ.');
+      }
     } finally {
       setIsLoading(false);
     }
