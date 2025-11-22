@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sprout, Droplets, Eye, EyeOff, Leaf } from 'lucide-react';
+import { Sprout, Droplets, Eye, EyeOff, Leaf, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
@@ -7,17 +7,41 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // In a real app, you would save the token here
+    setError('');
+
+    try {
+      const response = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại.');
+      }
+
+      // Save token and username
+      // Assuming the API returns { token: "..." } or similar structure
+      const token = data.token || data.accessToken || JSON.stringify(data);
+      localStorage.setItem('token', token);
+      localStorage.setItem('username', username);
+
       navigate('/dashboard');
-    }, 1000);
+    } catch (err: any) {
+      setError(err.message || 'Không thể kết nối đến máy chủ.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,6 +74,14 @@ const LoginPage: React.FC = () => {
         {/* Form Section */}
         <form onSubmit={handleLogin} className="space-y-6">
           
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2 animate-shake">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+          )}
+
           {/* Username Input */}
           <div className="space-y-2">
             <label htmlFor="username" className="block text-sm font-semibold text-gray-700">
@@ -127,7 +159,7 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* System Status Badge (Extra Custom Detail) */}
+        {/* System Status Badge */}
         <div className="mt-6 flex justify-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-100">
             <span className="relative flex h-2 w-2">

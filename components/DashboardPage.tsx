@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   LogOut, 
@@ -38,6 +38,7 @@ const mockChartData = [
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [username, setUsername] = useState('Admin');
   
   // Mock State
   const [pumpStatus, setPumpStatus] = useState(true); // true = ON
@@ -49,8 +50,22 @@ const DashboardPage: React.FC = () => {
   const [waterLevel] = useState(85); // Tank level %
   const [isDaytime] = useState(true); // Light sensor
 
+  useEffect(() => {
+    // Retrieve username from localStorage
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+    
+    // Optional: Check if token exists, if not redirect to login
+    // const token = localStorage.getItem('token');
+    // if (!token) navigate('/auth/login');
+  }, []);
+
   const handleLogout = () => {
     // Clear tokens if any
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
     navigate('/auth/login');
   };
 
@@ -76,7 +91,7 @@ const DashboardPage: React.FC = () => {
                 Hỏi trợ lý AI
               </button>
 
-              <span className="text-sm text-gray-500 hidden md:block">Xin chào, <span className="font-semibold text-gray-800">**Admin**</span></span>
+              <span className="text-sm text-gray-500 hidden md:block">Xin chào, <span className="font-semibold text-gray-800">**{username}**</span></span>
               <button 
                 onClick={handleLogout}
                 className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"

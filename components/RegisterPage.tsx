@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sprout, Eye, EyeOff, Leaf, UserPlus, User, Lock, CheckCircle } from 'lucide-react';
+import { Sprout, Eye, EyeOff, Leaf, UserPlus, User, Lock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const RegisterPage: React.FC = () => {
@@ -12,6 +12,7 @@ const RegisterPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,20 +23,41 @@ const RegisterPage: React.FC = () => {
     }));
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp!");
+      setError("Mật khẩu xác nhận không khớp!");
       return;
     }
     
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Đăng ký thất bại. Tên đăng nhập có thể đã tồn tại.');
+      }
+
+      alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
+      navigate('/auth/login');
+    } catch (err: any) {
+      setError(err.message || 'Có lỗi xảy ra khi đăng ký.');
+    } finally {
       setIsLoading(false);
-      alert(`Đăng ký thành công tài khoản: ${formData.username}`);
-      navigate('/dashboard');
-    }, 1500);
+    }
   };
 
   return (
@@ -68,6 +90,14 @@ const RegisterPage: React.FC = () => {
         {/* Form Section */}
         <form onSubmit={handleRegister} className="space-y-5">
           
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+              <AlertTriangle size={16} />
+              {error}
+            </div>
+          )}
+
           {/* Username Input */}
           <div className="space-y-1">
             <label htmlFor="username" className="block text-sm font-semibold text-gray-700">
