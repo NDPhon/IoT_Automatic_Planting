@@ -9,7 +9,8 @@ import {
   Moon, 
   Zap, 
   Settings, 
-  Waves 
+  Waves,
+  History
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -151,7 +152,11 @@ const DashboardPage: React.FC = () => {
                    <Settings size={18} />
                    Cấu Hình & Điều Khiển
                 </button>
-                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+                <button 
+                  onClick={() => navigate('/history')}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                   <History size={18} />
                    Xem Lịch sử Tưới
                 </button>
               </div>
