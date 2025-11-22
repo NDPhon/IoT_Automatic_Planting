@@ -16,6 +16,8 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
+      console.log("Đang gửi yêu cầu đăng nhập..."); // Debug log
+
       const response = await fetch('/api/users/login', {
         method: 'POST',
         headers: {
@@ -24,20 +26,33 @@ const LoginPage: React.FC = () => {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
+      
+      // Log the raw response to Console (F12) for debugging
+      console.log("Server response:", responseData);
 
+      // Check for HTTP error
       if (!response.ok) {
-        throw new Error(data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại.');
+        throw new Error(responseData.message || `HTTP Error: ${response.status}`);
       }
 
-      // Save token and username
-      // Assuming the API returns { token: "..." } or similar structure
-      const token = data.token || data.accessToken || JSON.stringify(data);
-      localStorage.setItem('token', token);
-      localStorage.setItem('username', username);
+      // Handle specific API structure: { code: 200, data: { token: "..." } }
+      if (responseData.code === 200 && responseData.data && responseData.data.token) {
+        const token = responseData.data.token;
+        
+        // Save to localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('username', username);
+        
+        console.log("Lưu token thành công, chuyển hướng...");
+        navigate('/dashboard');
+      } else {
+        // Fallback if structure doesn't match or code is not 200
+        throw new Error(responseData.message || 'Cấu trúc phản hồi không hợp lệ');
+      }
 
-      navigate('/dashboard');
     } catch (err: any) {
+      console.error("Lỗi đăng nhập:", err);
       setError(err.message || 'Không thể kết nối đến máy chủ.');
     } finally {
       setIsLoading(false);
