@@ -131,13 +131,10 @@ const DashboardPage: React.FC = () => {
               {/* Operation Mode */}
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 font-medium">Chế độ Hoạt động:</span>
-                <button 
-                  onClick={() => setIsAutoMode(!isAutoMode)}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${isAutoMode ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}
-                >
-                  {isAutoMode ? <Settings size={14} /> : <Zap size={14} />}
+                <div className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${isAutoMode ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                  {isAutoMode ? <Zap size={14} /> : <Settings size={14} />}
                   {isAutoMode ? 'Tự động' : 'Thủ công'}
-                </button>
+                </div>
               </div>
 
               {/* Threshold Display */}
@@ -147,9 +144,12 @@ const DashboardPage: React.FC = () => {
               </div>
 
               <div className="pt-2 grid gap-2">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">
-                   <Zap size={18} />
-                   Chuyển sang {isAutoMode ? 'Manual Control' : 'Auto Control'}
+                <button 
+                  onClick={() => navigate('/control')}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                   <Settings size={18} />
+                   Cấu Hình & Điều Khiển
                 </button>
                 <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
                    Xem Lịch sử Tưới

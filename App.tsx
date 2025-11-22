@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import DashboardPage from './components/DashboardPage';
+import ControlPage from './components/ControlPage';
 
 const App: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ const App: React.FC = () => {
         
         {/* Main App Routes */}
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/control" element={<ControlPage />} />
         
         {/* Fallback for other routes */}
         <Route path="*" element={<div className="flex items-center justify-center h-screen text-gray-500">Page not found</div>} />
