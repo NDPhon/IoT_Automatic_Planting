@@ -16,7 +16,8 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      console.log("Đang gửi yêu cầu đăng nhập..."); // Debug log
+      console.log("DEBUG: Bắt đầu đăng nhập...");
+      console.log("DEBUG: Gửi request đến /api/users/login");
 
       const response = await fetch('/api/users/login', {
         method: 'POST',
@@ -26,17 +27,33 @@ const LoginPage: React.FC = () => {
         body: JSON.stringify({ username, password }),
       });
 
-      const responseData = await response.json();
-      
-      // Log the raw response to Console (F12) for debugging
-      console.log("Server response:", responseData);
+      // 1. Read raw text first to debug "Unexpected end of JSON input"
+      const responseText = await response.text();
+      console.log("DEBUG: Server Raw Response:", responseText);
 
-      // Check for HTTP error
-      if (!response.ok) {
-        throw new Error(responseData.message || `HTTP Error: ${response.status}`);
+      if (!responseText) {
+        throw new Error("Máy chủ trả về phản hồi rỗng (Empty Response).");
       }
 
-      // Handle specific API structure: { code: 200, data: { token: "..." } }
+      // 2. Try to parse JSON
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        console.error("JSON Parse Error:", e);
+        // Show a snippet of the invalid text in the error
+        throw new Error(`Phản hồi không phải JSON hợp lệ: ${responseText.substring(0, 100)}...`);
+      }
+
+      console.log("DEBUG: Parsed JSON Data:", responseData);
+
+      // 3. Check for HTTP errors first
+      if (!response.ok) {
+        throw new Error(responseData.message || `Lỗi HTTP: ${response.status}`);
+      }
+
+      // 4. Check logic based on your API structure
+      // Expecting: { code: 200, message: "...", data: { token: "..." } }
       if (responseData.code === 200 && responseData.data && responseData.data.token) {
         const token = responseData.data.token;
         
@@ -44,15 +61,15 @@ const LoginPage: React.FC = () => {
         localStorage.setItem('token', token);
         localStorage.setItem('username', username);
         
-        console.log("Lưu token thành công, chuyển hướng...");
+        console.log("DEBUG: Login success, saving token and redirecting...");
         navigate('/dashboard');
       } else {
-        // Fallback if structure doesn't match or code is not 200
-        throw new Error(responseData.message || 'Cấu trúc phản hồi không hợp lệ');
+        // Fallback if structure matches but code is not 200 or token missing
+        throw new Error(responseData.message || 'Đăng nhập thất bại (Mã phản hồi không phải 200).');
       }
 
     } catch (err: any) {
-      console.error("Lỗi đăng nhập:", err);
+      console.error("Lỗi đăng nhập chi tiết:", err);
       setError(err.message || 'Không thể kết nối đến máy chủ.');
     } finally {
       setIsLoading(false);
@@ -92,8 +109,8 @@ const LoginPage: React.FC = () => {
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2 animate-shake">
-              <AlertCircle size={16} />
-              {error}
+              <AlertCircle size={16} className="flex-shrink-0" />
+              <span className="break-words">{error}</span>
             </div>
           )}
 
