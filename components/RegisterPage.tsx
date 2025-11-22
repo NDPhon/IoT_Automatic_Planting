@@ -34,6 +34,7 @@ const RegisterPage: React.FC = () => {
     setError('');
 
     try {
+      console.log("DEBUG: Gửi request register...");
       const response = await fetch('/api/users/register', {
         method: 'POST',
         headers: {
@@ -45,15 +46,27 @@ const RegisterPage: React.FC = () => {
         }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      console.log("DEBUG: Register raw response:", responseText);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Đăng ký thất bại. Tên đăng nhập có thể đã tồn tại.');
+        let errorMessage = `Lỗi HTTP: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(responseText);
+          if (errorJson.message) errorMessage = errorJson.message;
+        } catch {
+           if (responseText) errorMessage += ` - ${responseText.substring(0, 50)}`;
+        }
+        throw new Error(errorMessage);
       }
+      
+      // Parse JSON only if success
+      const data = responseText ? JSON.parse(responseText) : {};
 
       alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
       navigate('/auth/login');
     } catch (err: any) {
+      console.error("Register error:", err);
       setError(err.message || 'Có lỗi xảy ra khi đăng ký.');
     } finally {
       setIsLoading(false);

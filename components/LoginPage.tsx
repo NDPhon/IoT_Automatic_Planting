@@ -17,7 +17,7 @@ const LoginPage: React.FC = () => {
 
     try {
       console.log("DEBUG: Bắt đầu đăng nhập...");
-      console.log("DEBUG: Gửi request đến /api/users/login");
+      console.log(`DEBUG: Gửi request đến /api/users/login với username: ${username}`);
 
       const response = await fetch('/api/users/login', {
         method: 'POST',
@@ -27,45 +27,52 @@ const LoginPage: React.FC = () => {
         body: JSON.stringify({ username, password }),
       });
 
-      // 1. Read raw text first to debug "Unexpected end of JSON input"
+      console.log(`DEBUG: Response Status: ${response.status} ${response.statusText}`);
+
+      // 1. Đọc text trước để debug
       const responseText = await response.text();
       console.log("DEBUG: Server Raw Response:", responseText);
 
-      if (!responseText) {
-        throw new Error("Máy chủ trả về phản hồi rỗng (Empty Response).");
+      // 2. Kiểm tra lỗi HTTP trước (404, 500, etc.)
+      if (!response.ok) {
+        // Cố gắng parse lỗi từ JSON nếu có
+        let errorMessage = `Lỗi HTTP: ${response.status} ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(responseText);
+          if (errorJson.message) errorMessage = errorJson.message;
+        } catch {
+          // Nếu không parse được JSON lỗi, dùng text gốc hoặc message mặc định
+          if (responseText) errorMessage += ` - ${responseText.substring(0, 50)}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      // 2. Try to parse JSON
+      // 3. Kiểm tra body rỗng
+      if (!responseText) {
+        throw new Error("Máy chủ phản hồi thành công (200) nhưng không có dữ liệu.");
+      }
+
+      // 4. Parse JSON thành công
       let responseData;
       try {
         responseData = JSON.parse(responseText);
       } catch (e) {
-        console.error("JSON Parse Error:", e);
-        // Show a snippet of the invalid text in the error
-        throw new Error(`Phản hồi không phải JSON hợp lệ: ${responseText.substring(0, 100)}...`);
+        throw new Error(`Dữ liệu trả về không phải JSON hợp lệ: ${responseText.substring(0, 100)}...`);
       }
 
       console.log("DEBUG: Parsed JSON Data:", responseData);
 
-      // 3. Check for HTTP errors first
-      if (!response.ok) {
-        throw new Error(responseData.message || `Lỗi HTTP: ${response.status}`);
-      }
-
-      // 4. Check logic based on your API structure
-      // Expecting: { code: 200, message: "...", data: { token: "..." } }
+      // 5. Kiểm tra logic nghiệp vụ (code 200, có token)
       if (responseData.code === 200 && responseData.data && responseData.data.token) {
         const token = responseData.data.token;
         
-        // Save to localStorage
         localStorage.setItem('token', token);
         localStorage.setItem('username', username);
         
         console.log("DEBUG: Login success, saving token and redirecting...");
         navigate('/dashboard');
       } else {
-        // Fallback if structure matches but code is not 200 or token missing
-        throw new Error(responseData.message || 'Đăng nhập thất bại (Mã phản hồi không phải 200).');
+        throw new Error(responseData.message || 'Đăng nhập thất bại (Không tìm thấy Token).');
       }
 
     } catch (err: any) {
