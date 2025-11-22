@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
+import DashboardPage from './components/DashboardPage';
 
 const App: React.FC = () => {
   return (
@@ -13,6 +14,9 @@ const App: React.FC = () => {
         {/* Auth routes */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
+        
+        {/* Main App Routes */}
+        <Route path="/dashboard" element={<DashboardPage />} />
         
         {/* Fallback for other routes */}
         <Route path="*" element={<div className="flex items-center justify-center h-screen text-gray-500">Page not found</div>} />

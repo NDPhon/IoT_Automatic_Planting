@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Sprout, Droplets, Eye, EyeOff, Leaf } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,8 +15,9 @@ const LoginPage: React.FC = () => {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      alert(`Đăng nhập với: ${username}`);
-    }, 1500);
+      // In a real app, you would save the token here
+      navigate('/dashboard');
+    }, 1000);
   };
 
   return (

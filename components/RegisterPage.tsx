@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sprout, Droplets, Eye, EyeOff, Leaf, UserPlus, Mail, User, Lock, CheckCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +13,7 @@ const RegisterPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -34,6 +35,7 @@ const RegisterPage: React.FC = () => {
     setTimeout(() => {
       setIsLoading(false);
       alert(`Đăng ký thành công tài khoản: ${formData.username}`);
+      navigate('/dashboard');
     }, 1500);
   };
 
