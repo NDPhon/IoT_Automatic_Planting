@@ -10,7 +10,8 @@ import {
   Zap, 
   Settings, 
   Waves,
-  History
+  History,
+  Bot
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -66,6 +67,15 @@ const DashboardPage: React.FC = () => {
               <h1 className="text-xl font-bold text-green-700 tracking-tight">SmartFarm Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
+               {/* Chatbot Button */}
+               <button 
+                onClick={() => navigate('/chatbot')}
+                className="hidden sm:flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-emerald-200"
+              >
+                <Bot size={18} />
+                Hỏi trợ lý AI
+              </button>
+
               <span className="text-sm text-gray-500 hidden md:block">Xin chào, <span className="font-semibold text-gray-800">**Admin**</span></span>
               <button 
                 onClick={handleLogout}
@@ -81,6 +91,17 @@ const DashboardPage: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Mobile AI Button */}
+        <div className="sm:hidden mb-6">
+          <button 
+            onClick={() => navigate('/chatbot')}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md"
+          >
+            <Bot size={20} />
+            Chat với Trợ Lý Cây Trồng
+          </button>
+        </div>
         
         {/* Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

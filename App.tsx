@@ -5,6 +5,7 @@ import RegisterPage from './components/RegisterPage';
 import DashboardPage from './components/DashboardPage';
 import ControlPage from './components/ControlPage';
 import HistoryPage from './components/HistoryPage';
+import ChatbotPage from './components/ChatbotPage';
 
 const App: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const App: React.FC = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/control" element={<ControlPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/chatbot" element={<ChatbotPage />} />
         
         {/* Fallback for other routes */}
         <Route path="*" element={<div className="flex items-center justify-center h-screen text-gray-500">Page not found</div>} />
