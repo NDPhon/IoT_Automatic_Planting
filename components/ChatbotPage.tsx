@@ -84,6 +84,21 @@ const ChatbotPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Helper function để xử lý in đậm
+  const formatMessageText = (text: string) => {
+    // Tách chuỗi dựa trên dấu **
+    const parts = text.split('**');
+    
+    return parts.map((part, index) => {
+      // Các phần tử ở vị trí lẻ (1, 3, 5...) là nội dung nằm giữa các dấu **
+      if (index % 2 === 1) {
+        return <strong key={index} className="font-bold text-inherit">{part}</strong>;
+      }
+      // Các phần tử chẵn là văn bản thường
+      return part;
+    });
+  };
+
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
@@ -219,7 +234,8 @@ const ChatbotPage: React.FC = () => {
                   ${msg.sender === 'user' 
                     ? 'bg-blue-600 text-white rounded-tr-none' 
                     : 'bg-white text-gray-700 border border-gray-100 rounded-tl-none'}`}>
-                  <p className="whitespace-pre-line">{msg.text}</p>
+                  {/* Sử dụng hàm formatMessageText để hiển thị */}
+                  <p className="whitespace-pre-line">{formatMessageText(msg.text)}</p>
                   <span className={`text-[10px] mt-1 block opacity-70 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-400'}`}>
                     {msg.timestamp}
                   </span>
