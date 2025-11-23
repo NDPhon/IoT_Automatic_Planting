@@ -10,7 +10,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 // Mock Real-time Data (In a real app, this would come from Context or Redux)
 const SYSTEM_DATA = {
@@ -30,7 +30,7 @@ interface Message {
 }
 
 const ChatbotPage: React.FC = () => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -134,7 +134,7 @@ const ChatbotPage: React.FC = () => {
         if (response.status === 401) {
            // Token hết hạn
            alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
-           navigate('/auth/login');
+           history.push('/auth/login');
            return;
         }
         throw new Error(data.message || `Lỗi HTTP: ${response.status}`);
@@ -177,9 +177,12 @@ const ChatbotPage: React.FC = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <button 
+            onClick={() => history.push('/dashboard')} 
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors bg-transparent border-0 cursor-pointer"
+          >
             <ArrowLeft size={20} className="text-gray-600" />
-          </Link>
+          </button>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg text-white shadow-sm">
                <Bot size={20} />

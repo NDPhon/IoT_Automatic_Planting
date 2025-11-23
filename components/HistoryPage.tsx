@@ -9,7 +9,7 @@ import {
   Search,
   Download
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 // Mock Data for History Logs
 const mockHistoryData = [
@@ -22,6 +22,7 @@ const mockHistoryData = [
 ];
 
 const HistoryPage: React.FC = () => {
+  const history = useHistory();
   const [filterMode, setFilterMode] = useState('All');
   const [startDate, setStartDate] = useState('2025-11-01');
   const [endDate, setEndDate] = useState('2025-11-15');
@@ -43,13 +44,13 @@ const HistoryPage: React.FC = () => {
               </div>
               <h1 className="text-xl font-bold text-gray-800 tracking-tight">Lịch Sử Hoạt Động Tưới</h1>
             </div>
-            <Link 
-              to="/dashboard" 
-              className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors text-sm"
+            <button 
+              onClick={() => history.push('/dashboard')}
+              className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors text-sm bg-transparent border-0 cursor-pointer"
             >
               <ArrowLeft size={18} />
               Quay lại Dashboard
-            </Link>
+            </button>
           </div>
         </div>
       </header>

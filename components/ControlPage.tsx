@@ -11,9 +11,10 @@ import {
   Activity, 
   AlertCircle 
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 const ControlPage: React.FC = () => {
+  const history = useHistory();
   // Mock States
   const [pumpStatus, setPumpStatus] = useState(false); // false = OFF
   const [isAutoMode, setIsAutoMode] = useState(true);
@@ -65,13 +66,13 @@ const ControlPage: React.FC = () => {
               </div>
               <h1 className="text-xl font-bold text-gray-800 tracking-tight">Cấu Hình & Điều Khiển</h1>
             </div>
-            <Link 
-              to="/dashboard" 
-              className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors text-sm"
+            <button 
+              onClick={() => history.push('/dashboard')}
+              className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors text-sm bg-transparent border-0 cursor-pointer"
             >
               <ArrowLeft size={18} />
               Quay lại Dashboard
-            </Link>
+            </button>
           </div>
         </div>
       </header>

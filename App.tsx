@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Switch, Route, Redirect } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import DashboardPage from './components/DashboardPage';
@@ -10,23 +10,27 @@ import ChatbotPage from './components/ChatbotPage';
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <Routes>
+      <Switch>
         {/* Redirect root to the requested auth/login path */}
-        <Route path="/" element={<Navigate to="/auth/login" replace />} />
+        <Route exact path="/">
+          <Redirect to="/auth/login" />
+        </Route>
         
         {/* Auth routes */}
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/login" component={LoginPage} />
+        <Route path="/auth/register" component={RegisterPage} />
         
         {/* Main App Routes */}
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/control" element={<ControlPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/chatbot" element={<ChatbotPage />} />
+        <Route path="/dashboard" component={DashboardPage} />
+        <Route path="/control" component={ControlPage} />
+        <Route path="/history" component={HistoryPage} />
+        <Route path="/chatbot" component={ChatbotPage} />
         
         {/* Fallback for other routes */}
-        <Route path="*" element={<div className="flex items-center justify-center h-screen text-gray-500">Page not found</div>} />
-      </Routes>
+        <Route path="*">
+          <div className="flex items-center justify-center h-screen text-gray-500">Page not found</div>
+        </Route>
+      </Switch>
     </BrowserRouter>
   );
 };
