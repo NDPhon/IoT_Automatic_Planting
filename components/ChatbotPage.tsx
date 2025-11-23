@@ -34,6 +34,7 @@ const ChatbotPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [username, setUsername] = useState('Bạn'); // State cho tên người dùng
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Key dùng để lưu lịch sử chat trong localStorage
@@ -46,8 +47,15 @@ const ChatbotPage: React.FC = () => {
     "Kiểm tra tình trạng bơm"
   ];
 
-  // 1. Load lịch sử chat khi component mount
+  // 1. Load lịch sử chat và Username khi component mount
   useEffect(() => {
+    // Lấy tên người dùng
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+
+    // Lấy lịch sử chat
     const savedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
     if (savedHistory) {
       try {
@@ -234,6 +242,12 @@ const ChatbotPage: React.FC = () => {
                   ${msg.sender === 'user' 
                     ? 'bg-blue-600 text-white rounded-tr-none' 
                     : 'bg-white text-gray-700 border border-gray-100 rounded-tl-none'}`}>
+                  
+                  {/* Hiển thị tên người gửi */}
+                  <div className={`text-xs font-bold mb-1 ${msg.sender === 'user' ? 'text-blue-100' : 'text-emerald-600'}`}>
+                    {msg.sender === 'user' ? username : 'PlantCare AI'}
+                  </div>
+
                   {/* Sử dụng hàm formatMessageText để hiển thị */}
                   <p className="whitespace-pre-line">{formatMessageText(msg.text)}</p>
                   <span className={`text-[10px] mt-1 block opacity-70 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-400'}`}>
