@@ -41,9 +41,10 @@ const ChatbotPage: React.FC = () => {
   const CHAT_HISTORY_KEY = 'chat_history';
 
   const quickPrompts = [
-    "Cấu hình độ ẩm cây hoa hồng thế nào ?",
-    "Nên tưới lúc nào?",
-    "Ngưỡng độ ẩm hợp lý?",
+    "Cấu hình độ ẩm cho cây Hoa Hồng?",
+    "Lịch tưới nước cho cây Hoa Lan?",
+    "Ngưỡng độ ẩm đất cho cây Cẩm Tú Cầu?",
+    "Chế độ tưới cho cây Xương Rồng?",
     "Kiểm tra tình trạng bơm"
   ];
 
