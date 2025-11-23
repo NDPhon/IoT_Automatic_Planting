@@ -6,11 +6,11 @@ import {
   User, 
   Droplets, 
   Thermometer, 
-  Zap, 
   Wind, 
-  RefreshCw 
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // Mock Real-time Data (In a real app, this would come from Context or Redux)
 const SYSTEM_DATA = {
@@ -30,87 +30,140 @@ interface Message {
 }
 
 const ChatbotPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: 'bot',
-      text: 'Chào bạn! Tôi là PlantCare AI, trợ lý chăm sóc cây trồng của bạn. Tôi có thể tư vấn về độ ẩm, lịch tưới, và hỗ trợ xử lý sự cố thiết bị. \n\nDữ liệu hiện tại: Độ ẩm **' + SYSTEM_DATA.soilMoisture + '%**. Tôi có thể giúp gì cho bạn?',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]);
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Key dùng để lưu lịch sử chat trong localStorage
+  const CHAT_HISTORY_KEY = 'chat_history';
 
   const quickPrompts = [
+    "Cấu hình độ ẩm cây hoa hồng thế nào ?",
     "Nên tưới lúc nào?",
     "Ngưỡng độ ẩm hợp lý?",
-    "Kiểm tra tình trạng bơm",
-    "Cây đang thiếu nước không?"
+    "Kiểm tra tình trạng bơm"
   ];
+
+  // 1. Load lịch sử chat khi component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+    if (savedHistory) {
+      try {
+        setMessages(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Lỗi đọc lịch sử chat:", e);
+        initializeDefaultMessage();
+      }
+    } else {
+      initializeDefaultMessage();
+    }
+  }, []);
+
+  // 2. Lưu lịch sử chat mỗi khi messages thay đổi
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+    }
+    scrollToBottom();
+  }, [messages]);
+
+  const initializeDefaultMessage = () => {
+    setMessages([
+      {
+        id: 1,
+        sender: 'bot',
+        text: `Chào bạn! Tôi là PlantCare AI. Dữ liệu hiện tại: Độ ẩm **${SYSTEM_DATA.soilMoisture}%**. Tôi có thể giúp gì cho bạn?`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Simulated AI Logic
-  const generateResponse = (query: string) => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes('độ ẩm') || lowerQuery.includes('nước') || lowerQuery.includes('thiếu nước')) {
-      if (SYSTEM_DATA.soilMoisture < 50) {
-        return `Độ ẩm đất hiện tại là **${SYSTEM_DATA.soilMoisture}%**, mức này khá thấp. Bạn nên cân nhắc bật bơm tưới ngay hoặc kiểm tra xem chế độ Tự động có hoạt động đúng không.`;
-      } else if (SYSTEM_DATA.soilMoisture > 80) {
-        return `Độ ẩm đất đang rất cao (**${SYSTEM_DATA.soilMoisture}%**). Đừng tưới thêm nước để tránh úng rễ.`;
-      }
-      return `Độ ẩm đất đang ở mức ổn định (**${SYSTEM_DATA.soilMoisture}%**). Cây đang phát triển tốt.`;
-    }
-
-    if (lowerQuery.includes('bơm') || lowerQuery.includes('tình trạng')) {
-      return `Máy bơm hiện đang **${SYSTEM_DATA.pumpStatus ? 'BẬT' : 'TẮT'}**. Hệ thống đang chạy ở chế độ **${SYSTEM_DATA.mode}**. Lần tưới gần nhất là lúc ${SYSTEM_DATA.lastWatered}.`;
-    }
-
-    if (lowerQuery.includes('nhiệt độ') || lowerQuery.includes('nóng')) {
-      return `Nhiệt độ môi trường là **${SYSTEM_DATA.temperature}°C**. ${SYSTEM_DATA.temperature > 35 ? 'Trời khá nóng, hãy chú ý cấp đủ nước.' : 'Nhiệt độ này phù hợp cho cây phát triển.'}`;
-    }
-
-    if (lowerQuery.includes('lúc nào') || lowerQuery.includes('khi nào')) {
-      return "Với loại cây trồng hiện tại, bạn nên tưới vào sáng sớm (6h-8h) hoặc chiều mát (17h-18h) để tránh sốc nhiệt và nấm bệnh.";
-    }
-
-    return "Tôi chỉ có thể trả lời các câu hỏi liên quan đến thông số môi trường, trạng thái thiết bị (Bơm, Cảm biến) và kỹ thuật chăm sóc cây cơ bản trong hệ thống EcoWater.";
-  };
-
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
-    // Add User Message
+    // 1. Thêm tin nhắn của User vào giao diện
     const userMsg: Message = {
-      id: messages.length + 1,
+      id: Date.now(), // Use timestamp as ID
       sender: 'user',
       text: text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
+    
+    // Cập nhật state ngay lập tức
     setMessages(prev => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI Delay
-    setTimeout(() => {
-      const botResponse = generateResponse(text);
+    try {
+      // 2. Lấy Token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.");
+      }
+
+      // 3. Gọi API
+      const API_URL = 'http://localhost:8000/api/chat/chatbot';
+      console.log(`DEBUG: Sending question to ${API_URL}:`, text);
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ question: text })
+      });
+
+      // Xử lý response text trước để tránh lỗi JSON parse nếu body rỗng
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Server response not JSON:", responseText);
+        throw new Error("Lỗi máy chủ: Phản hồi không đúng định dạng.");
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+           // Token hết hạn
+           alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+           navigate('/auth/login');
+           return;
+        }
+        throw new Error(data.message || `Lỗi HTTP: ${response.status}`);
+      }
+
+      // 4. Lấy câu trả lời từ API (data.data.advice)
+      const botResponseText = data.data?.advice || "Xin lỗi, tôi không nhận được câu trả lời từ máy chủ.";
+
       const botMsg: Message = {
-        id: messages.length + 2,
+        id: Date.now() + 1,
         sender: 'bot',
-        text: botResponse,
+        text: botResponseText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
+
       setMessages(prev => [...prev, botMsg]);
+
+    } catch (error: any) {
+      console.error("Chat API Error:", error);
+      const errorMsg: Message = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: `⚠️ Đã xảy ra lỗi: ${error.message}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -195,6 +248,7 @@ const ChatbotPage: React.FC = () => {
                 key={index}
                 onClick={() => handleSendMessage(prompt)}
                 className="flex-shrink-0 text-xs bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors"
+                disabled={isTyping}
               >
                 {prompt}
               </button>
@@ -210,11 +264,12 @@ const ChatbotPage: React.FC = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Nhập câu hỏi của bạn..."
-                className="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-full focus:ring-emerald-500 focus:border-emerald-500 block w-full p-3 pl-5 pr-12 shadow-sm"
+                disabled={isTyping}
+                className="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-full focus:ring-emerald-500 focus:border-emerald-500 block w-full p-3 pl-5 pr-12 shadow-sm disabled:opacity-50"
               />
               <button 
                 onClick={() => handleSendMessage(inputValue)}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isTyping}
                 className="absolute right-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white p-2 rounded-full transition-all shadow-md transform active:scale-95"
               >
                 <Send size={18} />

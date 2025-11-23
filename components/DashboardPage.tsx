@@ -63,9 +63,13 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    // Clear tokens if any
+    // Clear tokens and user data
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    
+    // XÓA LỊCH SỬ CHAT KHI ĐĂNG XUẤT
+    localStorage.removeItem('chat_history');
+    
     navigate('/auth/login');
   };
 
