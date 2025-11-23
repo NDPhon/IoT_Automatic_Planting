@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sprout, Eye, EyeOff, Leaf, UserPlus, User, Lock, CheckCircle, AlertTriangle } from 'lucide-react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,7 +13,7 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,7 +67,7 @@ const RegisterPage: React.FC = () => {
       const data = responseText ? JSON.parse(responseText) : {};
 
       alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
-      history.push('/auth/login');
+      navigate('/auth/login');
     } catch (err: any) {
       console.error("Register error:", err);
       // Kiểm tra lỗi CORS

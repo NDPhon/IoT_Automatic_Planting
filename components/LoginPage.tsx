@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sprout, Droplets, Eye, EyeOff, Leaf, AlertCircle } from 'lucide-react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -8,7 +8,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +75,7 @@ const LoginPage: React.FC = () => {
         localStorage.setItem('username', username);
         
         console.log("DEBUG: Login success, saving token and redirecting...");
-        history.push('/dashboard');
+        navigate('/dashboard');
       } else {
         throw new Error(responseData.message || 'Đăng nhập thất bại (Không tìm thấy Token).');
       }

@@ -13,7 +13,7 @@ import {
   History,
   Bot
 } from 'lucide-react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   LineChart, 
   Line, 
@@ -37,7 +37,7 @@ const mockChartData = [
 ];
 
 const DashboardPage: React.FC = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('Admin');
   
   // Mock State
@@ -59,7 +59,7 @@ const DashboardPage: React.FC = () => {
     
     // Optional: Check if token exists, if not redirect to login
     // const token = localStorage.getItem('token');
-    // if (!token) history.push('/auth/login');
+    // if (!token) navigate('/auth/login');
   }, []);
 
   const handleLogout = () => {
@@ -70,7 +70,7 @@ const DashboardPage: React.FC = () => {
     // XÓA LỊCH SỬ CHAT KHI ĐĂNG XUẤT
     localStorage.removeItem('chat_history');
     
-    history.push('/auth/login');
+    navigate('/auth/login');
   };
 
   return (
@@ -88,7 +88,7 @@ const DashboardPage: React.FC = () => {
             <div className="flex items-center gap-4">
                {/* Chatbot Button */}
                <button 
-                onClick={() => history.push('/chatbot')}
+                onClick={() => navigate('/chatbot')}
                 className="hidden sm:flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-emerald-200"
               >
                 <Bot size={18} />
@@ -114,7 +114,7 @@ const DashboardPage: React.FC = () => {
         {/* Mobile AI Button */}
         <div className="sm:hidden mb-6">
           <button 
-            onClick={() => history.push('/chatbot')}
+            onClick={() => navigate('/chatbot')}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md"
           >
             <Bot size={20} />
@@ -186,14 +186,14 @@ const DashboardPage: React.FC = () => {
 
               <div className="pt-2 grid gap-2">
                 <button 
-                  onClick={() => history.push('/control')}
+                  onClick={() => navigate('/control')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                    <Settings size={18} />
                    Cấu Hình & Điều Khiển
                 </button>
                 <button 
-                  onClick={() => history.push('/history')}
+                  onClick={() => navigate('/history')}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                    <History size={18} />
