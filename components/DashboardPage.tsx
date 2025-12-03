@@ -26,16 +26,6 @@ import {
   ReferenceLine 
 } from 'recharts';
 
-// Initial Mock Data for the Chart (Will be appended with real data)
-const initialChartData = [
-  { time: '00:00', moisture: 60 },
-  { time: '04:00', moisture: 55 },
-  { time: '08:00', moisture: 48 },
-  { time: '12:00', moisture: 70 },
-  { time: '16:00', moisture: 65 },
-  { time: '20:00', moisture: 52 },
-];
-
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('Admin');
@@ -49,8 +39,8 @@ const DashboardPage: React.FC = () => {
     light: 0
   });
 
-  // Chart Data State
-  const [chartData, setChartData] = useState<any[]>(initialChartData);
+  // Chart Data State - Start empty
+  const [chartData, setChartData] = useState<any[]>([]);
 
   // System States
   const [pumpStatus, setPumpStatus] = useState(false); // Default OFF
@@ -66,7 +56,8 @@ const DashboardPage: React.FC = () => {
     }
     
     // 2. Initial Fetch
-    fetchSensorData();
+    fetchHistoricalData(); // Load history first
+    fetchSensorData(); // Then load current status
 
     // 3. Setup Polling (Auto-refresh every 5 seconds)
     const intervalId = setInterval(fetchSensorData, 5000);
@@ -75,6 +66,51 @@ const DashboardPage: React.FC = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  const fetchHistoricalData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:8000/api/sensors/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const responseText = await response.text();
+      let jsonData;
+      try {
+        jsonData = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Invalid JSON history:", e);
+        return;
+      }
+
+      if (jsonData.code === 200 && Array.isArray(jsonData.data)) {
+        // Sort data ascending by time (Oldest -> Newest)
+        const sortedData = jsonData.data.sort((a: any, b: any) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+
+        // Map to chart format
+        const formattedData = sortedData.map((item: any) => {
+          const date = new Date(item.created_at);
+          return {
+            time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            moisture: parseFloat(item.do_am_dat)
+          };
+        });
+
+        // Keep last 20 points for better visibility
+        setChartData(formattedData.slice(-20));
+      }
+    } catch (error) {
+      console.error("Failed to fetch historical data:", error);
+    }
+  };
+
   const fetchSensorData = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -82,9 +118,6 @@ const DashboardPage: React.FC = () => {
       navigate('/auth/login');
       return;
     }
-
-    // Don't show full loading spinner on background updates, maybe just a small indicator
-    // setIsLoading(true); 
 
     try {
       const response = await fetch('http://localhost:8000/api/sensors/current', {
@@ -137,9 +170,14 @@ const DashboardPage: React.FC = () => {
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         setChartData(prevData => {
+          // Avoid duplicate time points if API returns same data quickly
+          if (prevData.length > 0 && prevData[prevData.length - 1].time === timeString) {
+            return prevData;
+          }
+
           const newData = [...prevData, { time: timeString, moisture: newSoil }];
-          // Keep only last 10 points to avoid overcrowding
-          if (newData.length > 10) return newData.slice(newData.length - 10);
+          // Keep only last 20 points to match historical view
+          if (newData.length > 20) return newData.slice(newData.length - 20);
           return newData;
         });
 
