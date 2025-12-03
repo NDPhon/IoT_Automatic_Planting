@@ -59,8 +59,8 @@ const DashboardPage: React.FC = () => {
     fetchHistoricalData(); // Load history first
     fetchSensorData(); // Then load current status
 
-    // 3. Setup Polling (Auto-refresh every 5 seconds)
-    const intervalId = setInterval(fetchSensorData, 5000);
+    // 3. Setup Polling (Auto-refresh every 5 minutes)
+    const intervalId = setInterval(fetchSensorData, 5 * 60 * 1000);
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
