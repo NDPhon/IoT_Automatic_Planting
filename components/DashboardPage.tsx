@@ -165,9 +165,9 @@ const DashboardPage: React.FC = () => {
         });
 
         // Update Chart Data (Real-time effect)
-        // Add new point with current time
-        const now = new Date();
-        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // Use created_at from API instead of new Date()
+        const timestamp = data.created_at ? new Date(data.created_at) : new Date();
+        const timeString = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         setChartData(prevData => {
           // Avoid duplicate time points if API returns same data quickly
@@ -301,44 +301,43 @@ const DashboardPage: React.FC = () => {
             <div className="space-y-6">
               {/* Pump Status */}
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 font-medium flex items-center gap-2">
-                  Trạng thái Bơm:
-                </span>
-                <div className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 ${pumpStatus ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  <div className={`w-2 h-2 rounded-full ${pumpStatus ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                <span className="text-gray-600 font-medium">Trạng thái Bơm:</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 ${pumpStatus ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <span className={`w-2 h-2 rounded-full ${pumpStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
                   {pumpStatus ? 'Đang Bật' : 'Đang Tắt'}
-                </div>
+                </span>
               </div>
 
-              {/* Operation Mode */}
+              {/* Operating Mode */}
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 font-medium">Chế độ Hoạt động:</span>
-                <div className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${isAutoMode ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 ${isAutoMode ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
                   {isAutoMode ? <Zap size={14} /> : <Settings size={14} />}
                   {isAutoMode ? 'Tự động' : 'Thủ công'}
-                </div>
+                </span>
               </div>
 
-              {/* Threshold Display */}
+               {/* Threshold */}
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 font-medium">Ngưỡng Độ ẩm:</span>
-                <span className="text-orange-500 font-bold">{threshold}%</span>
+                <span className="text-lg font-bold text-gray-800">{threshold}%</span>
               </div>
 
-              <div className="pt-2 grid gap-2">
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 gap-3 pt-2">
                 <button 
                   onClick={() => navigate('/control')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
-                   <Settings size={18} />
-                   Cấu Hình & Điều Khiển
+                  <Settings size={18} />
+                  Chuyển sang Manual Control
                 </button>
                 <button 
                   onClick={() => navigate('/history')}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                   <History size={18} />
-                   Xem Lịch sử Tưới
+                  <History size={18} />
+                  Xem Lịch sử Tưới
                 </button>
               </div>
             </div>
@@ -346,104 +345,100 @@ const DashboardPage: React.FC = () => {
 
           {/* Card 3: Environment Sensors */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-4 border-b border-gray-100 pb-2">Môi trường</h2>
+            <h2 className="text-lg font-semibold text-gray-700 mb-6 border-b border-gray-100 pb-2">Môi trường Không khí</h2>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-6">
+              
               {/* Temperature */}
-              <div className="bg-red-50 p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow">
-                <Thermometer className="text-red-500 mb-2" size={28} />
-                <span className="text-gray-500 text-xs">Nhiệt độ</span>
-                <span className="text-xl font-bold text-gray-800 transition-all duration-500">{sensorData.temp}°C</span>
-              </div>
-
-              {/* Air Humidity */}
-              <div className="bg-blue-50 p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow">
-                <Wind className="text-blue-500 mb-2" size={28} />
-                <span className="text-gray-500 text-xs">Độ ẩm KK</span>
-                <span className="text-xl font-bold text-gray-800 transition-all duration-500">{sensorData.airHumidity}%</span>
-              </div>
-
-              {/* Water Tank Level */}
-              <div className="bg-cyan-50 p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow relative overflow-hidden group">
-                 {/* Simple liquid animation effect */}
-                <div className="absolute bottom-0 left-0 right-0 bg-cyan-200/30 transition-all duration-500" style={{ height: `${Math.min(sensorData.waterLevel, 100)}%` }}></div>
-                <div className="relative z-10 flex flex-col items-center">
-                    <Waves className="text-cyan-600 mb-2 group-hover:scale-110 transition-transform" size={28} />
-                    <span className="text-gray-500 text-xs">Mực nước</span>
-                    <span className="text-xl font-bold text-gray-800 transition-all duration-500">{sensorData.waterLevel}</span>
-                    <span className="text-[10px] text-gray-400">(Lit/cm)</span>
+              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-red-50 transition-colors group">
+                <div className="bg-red-100 p-3 rounded-full text-red-500 group-hover:bg-red-200 transition-colors">
+                  <Thermometer size={24} />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">Nhiệt độ</p>
+                  <p className="text-3xl font-bold text-gray-800">{sensorData.temp}<span className="text-lg text-gray-500 ml-0.5">°C</span></p>
                 </div>
               </div>
 
-              {/* Light Sensor */}
-              <div className={`p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow transition-colors duration-500 ${isDaytime ? 'bg-amber-50' : 'bg-indigo-50'}`}>
-                {isDaytime ? (
-                  <Sun className="text-amber-500 mb-2 animate-spin-slow" size={28} />
-                ) : (
-                  <Moon className="text-indigo-500 mb-2" size={28} />
-                )}
-                <span className="text-gray-500 text-xs">Ánh sáng</span>
-                <span className="text-lg font-bold text-gray-800 transition-all duration-500">{sensorData.light}</span>
-                <span className="text-[10px] text-gray-400">{isDaytime ? 'Sáng' : 'Tối'}</span>
+              {/* Humidity */}
+              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-cyan-50 transition-colors group">
+                <div className="bg-cyan-100 p-3 rounded-full text-cyan-500 group-hover:bg-cyan-200 transition-colors">
+                  <Wind size={24} />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">Độ ẩm KK</p>
+                  <p className="text-3xl font-bold text-gray-800">{sensorData.airHumidity}<span className="text-lg text-gray-500 ml-0.5">%</span></p>
+                </div>
               </div>
+
+              {/* Light (Sun/Moon) */}
+              <div className={`flex items-center gap-4 p-3 rounded-xl transition-colors group ${isDaytime ? 'hover:bg-amber-50' : 'hover:bg-indigo-50'}`}>
+                <div className={`p-3 rounded-full transition-colors ${isDaytime ? 'bg-amber-100 text-amber-500 group-hover:bg-amber-200' : 'bg-indigo-100 text-indigo-500 group-hover:bg-indigo-200'}`}>
+                  {isDaytime ? <Sun size={24} /> : <Moon size={24} />}
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">Ánh sáng</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold text-gray-800">{sensorData.light}</p>
+                    <span className="text-sm text-gray-500 font-medium">{isDaytime ? 'Sáng' : 'Tối'}</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
         </div>
 
-        {/* Bottom Section: Chart */}
+        {/* Chart Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-700">Biểu đồ Độ ẩm Đất (Realtime)</h2>
-            <div className="flex items-center gap-4 text-sm">
-               <div className="flex items-center gap-1">
-                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                 <span className="text-gray-600">Độ ẩm Đất (%)</span>
-               </div>
-               <div className="flex items-center gap-1">
-                 <div className="w-8 h-0.5 border-t-2 border-dashed border-yellow-500"></div>
-                 <span className="text-gray-600">Ngưỡng {threshold}%</span>
-               </div>
+            <div className="flex items-center gap-2">
+               <span className="flex items-center gap-1 text-xs text-gray-500">
+                  <div className="w-3 h-0.5 bg-green-500"></div> Độ ẩm Đất (%)
+               </span>
+               <span className="flex items-center gap-1 text-xs text-gray-500 ml-2">
+                  <div className="w-3 h-0.5 border-t border-dashed border-orange-400"></div> Ngưỡng {threshold}%
+               </span>
             </div>
           </div>
           
-          <div className="h-[350px] w-full">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={chartData}
-                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#f0f0f0" />
+              <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="time" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#9ca3af', fontSize: 12 }} 
-                  dy={10}
+                  stroke="#9ca3af" 
+                  fontSize={12} 
+                  tickMargin={10}
                 />
                 <YAxis 
+                  stroke="#9ca3af" 
+                  fontSize={12} 
                   domain={[0, 100]} 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#9ca3af', fontSize: 12 }} 
-                  label={{ value: 'Độ ẩm (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 12 }}
+                  label={{ value: 'Độ ẩm (%)', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af', fontSize: '12px' } }} 
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  itemStyle={{ color: '#16a34a', fontWeight: 'bold' }}
+                  contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  itemStyle={{ color: '#059669', fontWeight: 'bold' }}
                 />
-                <ReferenceLine y={threshold} stroke="#eab308" strokeDasharray="5 5" />
+                <ReferenceLine y={threshold} stroke="#f97316" strokeDasharray="5 5" />
                 <Line 
                   type="monotone" 
                   dataKey="moisture" 
                   stroke="#22c55e" 
                   strokeWidth={2} 
                   dot={{ r: 4, fill: '#22c55e', strokeWidth: 2, stroke: '#fff' }} 
-                  activeDot={{ r: 6 }} 
-                  isAnimationActive={true}
+                  activeDot={{ r: 6, fill: '#15803d' }}
+                  animationDuration={500}
                 />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-4 text-center">
+             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút) - Cập nhật tự động mỗi 5 phút</p>
           </div>
         </div>
 
