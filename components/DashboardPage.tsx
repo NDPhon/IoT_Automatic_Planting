@@ -11,7 +11,8 @@ import {
   Settings, 
   Waves,
   History,
-  Bot
+  Bot,
+  RefreshCw // Icon for loading status
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -25,53 +26,144 @@ import {
   ReferenceLine 
 } from 'recharts';
 
-// Mock Data for the Chart (24 Hours)
-const mockChartData = [
+// Initial Mock Data for the Chart (Will be appended with real data)
+const initialChartData = [
   { time: '00:00', moisture: 60 },
   { time: '04:00', moisture: 55 },
   { time: '08:00', moisture: 48 },
-  { time: '12:00', moisture: 70 }, // Pump triggered here
+  { time: '12:00', moisture: 70 },
   { time: '16:00', moisture: 65 },
   { time: '20:00', moisture: 52 },
-  { time: '24:00', moisture: 58 },
 ];
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('Admin');
   
-  // Mock State
-  const [pumpStatus, setPumpStatus] = useState(true); // true = ON
+  // Real Sensor Data State
+  const [sensorData, setSensorData] = useState({
+    soilMoisture: 0,
+    temp: 0,
+    airHumidity: 0,
+    waterLevel: 0,
+    light: 0
+  });
+
+  // Chart Data State
+  const [chartData, setChartData] = useState<any[]>(initialChartData);
+
+  // System States
+  const [pumpStatus, setPumpStatus] = useState(false); // Default OFF
   const [isAutoMode, setIsAutoMode] = useState(true);
-  const [soilMoisture] = useState(65);
-  const [threshold] = useState(50);
-  const [temp] = useState(28);
-  const [airHumidity] = useState(70);
-  const [waterLevel] = useState(85); // Tank level %
-  const [isDaytime] = useState(true); // Light sensor
+  const [threshold] = useState(50); // Hardcoded threshold for now
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Retrieve username from localStorage
+    // 1. Retrieve username
     const storedUsername = localStorage.getItem('username');
     if (storedUsername) {
       setUsername(storedUsername);
     }
     
-    // Optional: Check if token exists, if not redirect to login
-    // const token = localStorage.getItem('token');
-    // if (!token) navigate('/auth/login');
+    // 2. Initial Fetch
+    fetchSensorData();
+
+    // 3. Setup Polling (Auto-refresh every 5 seconds)
+    const intervalId = setInterval(fetchSensorData, 5000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
+  const fetchSensorData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn("No token found, redirecting to login...");
+      navigate('/auth/login');
+      return;
+    }
+
+    // Don't show full loading spinner on background updates, maybe just a small indicator
+    // setIsLoading(true); 
+
+    try {
+      const response = await fetch('http://localhost:8000/api/sensors/current', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 401) {
+        // Token expired
+        localStorage.removeItem('token');
+        navigate('/auth/login');
+        return;
+      }
+
+      const responseText = await response.text();
+      // Safely parse JSON
+      let jsonData;
+      try {
+        jsonData = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Invalid JSON response:", responseText);
+        return;
+      }
+
+      if (jsonData.code === 200 && jsonData.data) {
+        const data = jsonData.data;
+        
+        // Parse string values to numbers
+        const newTemp = parseFloat(data.nhiet_do);
+        const newHumidity = parseFloat(data.do_am_khong_khi);
+        const newSoil = parseFloat(data.do_am_dat);
+        const newWater = parseFloat(data.muc_nuoc);
+        const newLight = parseFloat(data.anh_sang);
+
+        // Update Sensor State
+        setSensorData({
+          temp: newTemp,
+          airHumidity: newHumidity,
+          soilMoisture: newSoil,
+          waterLevel: newWater,
+          light: newLight
+        });
+
+        // Update Chart Data (Real-time effect)
+        // Add new point with current time
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        setChartData(prevData => {
+          const newData = [...prevData, { time: timeString, moisture: newSoil }];
+          // Keep only last 10 points to avoid overcrowding
+          if (newData.length > 10) return newData.slice(newData.length - 10);
+          return newData;
+        });
+
+      } else {
+        console.error("API Error Message:", jsonData.message);
+      }
+
+    } catch (error) {
+      console.error("Failed to fetch sensor data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = () => {
-    // Clear tokens and user data
     localStorage.removeItem('token');
     localStorage.removeItem('username');
-    
-    // XÓA LỊCH SỬ CHAT KHI ĐĂNG XUẤT
     localStorage.removeItem('chat_history');
-    
     navigate('/auth/login');
   };
+
+  // Logic to determine if it is "Day" or "Night" based on light sensor
+  // Assuming Light > 100 is Day
+  const isDaytime = sensorData.light > 100;
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -126,36 +218,47 @@ const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           
           {/* Card 1: Soil Moisture (Main Metric) */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between relative overflow-hidden">
+             {/* Background decoration */}
+             <div className="absolute -right-6 -top-6 bg-blue-50 w-32 h-32 rounded-full opacity-50 blur-2xl"></div>
+
             <div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-4 border-b border-gray-100 pb-2">Thông số Độ ẩm Đất</h2>
-              <div className="flex items-end justify-between mt-6">
+              <h2 className="text-lg font-semibold text-gray-700 mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
+                <Droplets size={20} className="text-blue-500" />
+                Thông số Độ ẩm Đất
+              </h2>
+              <div className="flex items-end justify-between mt-6 relative z-10">
                 <div>
                   <p className="text-gray-500 text-sm mb-1">Độ ẩm hiện tại:</p>
-                  <div className="text-6xl font-bold text-blue-600 flex items-start">
-                    {soilMoisture}
+                  <div className="text-6xl font-bold text-blue-600 flex items-start transition-all duration-500">
+                    {sensorData.soilMoisture}
                     <span className="text-2xl mt-2 ml-1">%</span>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-gray-400 text-xs mb-1">Ngưỡng đặt: {threshold}%</p>
-                  <div className={`text-2xl font-bold ${soilMoisture > threshold ? 'text-green-500' : 'text-orange-500'}`}>
-                    {soilMoisture > threshold ? 'Đủ nước' : 'Cần tưới'}
+                  <div className={`text-2xl font-bold transition-colors duration-300 ${sensorData.soilMoisture > threshold ? 'text-green-500' : 'text-orange-500'}`}>
+                    {sensorData.soilMoisture > threshold ? 'Đủ nước' : 'Cần tưới'}
                   </div>
                 </div>
               </div>
             </div>
             <div className="mt-6 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-200">
               <div 
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-1000" 
-                style={{ width: `${soilMoisture}%` }}
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-out" 
+                style={{ width: `${Math.min(sensorData.soilMoisture, 100)}%` }}
               ></div>
             </div>
           </div>
 
           {/* Card 2: Status & Controls */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-4 border-b border-gray-100 pb-2">Trạng thái & Cài đặt</h2>
+            <h2 className="text-lg font-semibold text-gray-700 mb-4 border-b border-gray-100 pb-2 flex items-center justify-between">
+              <span>Trạng thái & Cài đặt</span>
+              <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div> Live
+              </span>
+            </h2>
             
             <div className="space-y-6">
               {/* Pump Status */}
@@ -212,36 +315,38 @@ const DashboardPage: React.FC = () => {
               <div className="bg-red-50 p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow">
                 <Thermometer className="text-red-500 mb-2" size={28} />
                 <span className="text-gray-500 text-xs">Nhiệt độ</span>
-                <span className="text-xl font-bold text-gray-800">{temp}°C</span>
+                <span className="text-xl font-bold text-gray-800 transition-all duration-500">{sensorData.temp}°C</span>
               </div>
 
               {/* Air Humidity */}
               <div className="bg-blue-50 p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow">
                 <Wind className="text-blue-500 mb-2" size={28} />
                 <span className="text-gray-500 text-xs">Độ ẩm KK</span>
-                <span className="text-xl font-bold text-gray-800">{airHumidity}%</span>
+                <span className="text-xl font-bold text-gray-800 transition-all duration-500">{sensorData.airHumidity}%</span>
               </div>
 
               {/* Water Tank Level */}
-              <div className="bg-cyan-50 p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="bg-cyan-50 p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow relative overflow-hidden group">
                  {/* Simple liquid animation effect */}
-                <div className="absolute bottom-0 left-0 right-0 bg-cyan-200/30 transition-all duration-500" style={{ height: `${waterLevel}%` }}></div>
+                <div className="absolute bottom-0 left-0 right-0 bg-cyan-200/30 transition-all duration-500" style={{ height: `${Math.min(sensorData.waterLevel, 100)}%` }}></div>
                 <div className="relative z-10 flex flex-col items-center">
-                    <Waves className="text-cyan-600 mb-2" size={28} />
+                    <Waves className="text-cyan-600 mb-2 group-hover:scale-110 transition-transform" size={28} />
                     <span className="text-gray-500 text-xs">Mực nước</span>
-                    <span className="text-xl font-bold text-gray-800">{waterLevel}%</span>
+                    <span className="text-xl font-bold text-gray-800 transition-all duration-500">{sensorData.waterLevel}</span>
+                    <span className="text-[10px] text-gray-400">(Lit/cm)</span>
                 </div>
               </div>
 
               {/* Light Sensor */}
-              <div className={`p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow ${isDaytime ? 'bg-amber-50' : 'bg-indigo-50'}`}>
+              <div className={`p-4 rounded-xl flex flex-col items-center justify-center hover:shadow-md transition-shadow transition-colors duration-500 ${isDaytime ? 'bg-amber-50' : 'bg-indigo-50'}`}>
                 {isDaytime ? (
-                  <Sun className="text-amber-500 mb-2" size={28} />
+                  <Sun className="text-amber-500 mb-2 animate-spin-slow" size={28} />
                 ) : (
                   <Moon className="text-indigo-500 mb-2" size={28} />
                 )}
                 <span className="text-gray-500 text-xs">Ánh sáng</span>
-                <span className="text-lg font-bold text-gray-800">{isDaytime ? 'Sáng' : 'Tối'}</span>
+                <span className="text-lg font-bold text-gray-800 transition-all duration-500">{sensorData.light}</span>
+                <span className="text-[10px] text-gray-400">{isDaytime ? 'Sáng' : 'Tối'}</span>
               </div>
             </div>
           </div>
@@ -251,7 +356,7 @@ const DashboardPage: React.FC = () => {
         {/* Bottom Section: Chart */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-700">Biểu đồ Độ ẩm Đất (24 Giờ Qua)</h2>
+            <h2 className="text-lg font-semibold text-gray-700">Biểu đồ Độ ẩm Đất (Realtime)</h2>
             <div className="flex items-center gap-4 text-sm">
                <div className="flex items-center gap-1">
                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -267,7 +372,7 @@ const DashboardPage: React.FC = () => {
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={mockChartData}
+                data={chartData}
                 margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#f0f0f0" />
@@ -297,6 +402,7 @@ const DashboardPage: React.FC = () => {
                   strokeWidth={2} 
                   dot={{ r: 4, fill: '#22c55e', strokeWidth: 2, stroke: '#fff' }} 
                   activeDot={{ r: 6 }} 
+                  isAnimationActive={true}
                 />
               </LineChart>
             </ResponsiveContainer>
