@@ -90,27 +90,6 @@ const HistoryPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      // Kiểm tra ngày hợp lệ
-      if (isNaN(date.getTime())) return dateString;
-
-      // Format giống Dashboard: HH:mm:ss dd/mm/yyyy - Timezone Ho Chi Minh
-      return date.toLocaleString('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
   const handlePrevPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
@@ -223,10 +202,10 @@ const HistoryPage: React.FC = () => {
                       className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800">
-                        {formatDate(item.start_time)}
+                        {item.start_time}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800">
-                        {formatDate(item.end_time)}
+                        {item.end_time}
                       </td>
                       <td className="px-6 py-4 font-medium flex items-center gap-1">
                         <Clock size={14} className="text-gray-400" />
