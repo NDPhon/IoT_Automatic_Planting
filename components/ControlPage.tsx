@@ -120,14 +120,30 @@ const ControlPage: React.FC = () => {
     return 0;
   };
 
-  // Helper: Format Date 'YYYY-MM-DD HH:mm' (Theo giờ địa phương của máy người dùng)
+  // Helper: Format Date 'YYYY-MM-DD HH:mm' (Theo múi giờ Asia/Ho_Chi_Minh)
   const formatDateForApi = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+    // Sử dụng Intl.DateTimeFormat để lấy các thành phần thời gian theo đúng múi giờ VN
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
+    const parts = formatter.formatToParts(date);
+    const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value || '';
+
+    // en-GB parts usually format as dd/mm/yyyy, hh:mm but formatToParts is safe to pick by type
+    const year = getPart('year');
+    const month = getPart('month');
+    const day = getPart('day');
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+
+    return `${year}-${month}-${day} ${hour}:${minute}`;
   };
 
   // Helper: Ghi lịch sử
@@ -143,7 +159,7 @@ const ControlPage: React.FC = () => {
         reason: "Người dùng bật/tắt thủ công"
       };
 
-      console.log("Sending History Log:", payload);
+      console.log("Sending History Log (VN Time):", payload);
 
       await fetch('http://localhost:8000/api/history/add', {
         method: 'POST',

@@ -96,11 +96,12 @@ const HistoryPage: React.FC = () => {
       // Kiểm tra ngày hợp lệ
       if (isNaN(date.getTime())) return dateString;
 
-      // Format giống Dashboard: HH:mm:ss dd/mm/yyyy
+      // Format giống Dashboard: HH:mm:ss dd/mm/yyyy - Timezone Ho Chi Minh
       return date.toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit', // Thêm giây để giống Dashboard
+        second: '2-digit',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',

@@ -84,7 +84,11 @@ const ChatbotPage: React.FC = () => {
         id: 1,
         sender: 'bot',
         text: `Chào bạn! Tôi là PlantCare AI. Dữ liệu hiện tại: Độ ẩm **${SYSTEM_DATA.soilMoisture}%**. Tôi có thể giúp gì cho bạn?`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString('vi-VN', { 
+          timeZone: 'Asia/Ho_Chi_Minh',
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
       }
     ]);
   };
@@ -116,7 +120,11 @@ const ChatbotPage: React.FC = () => {
       id: Date.now(), // Use timestamp as ID
       sender: 'user',
       text: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString('vi-VN', { 
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
     };
     
     // Cập nhật state ngay lập tức
@@ -171,7 +179,11 @@ const ChatbotPage: React.FC = () => {
         id: Date.now() + 1,
         sender: 'bot',
         text: botResponseText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString('vi-VN', { 
+          timeZone: 'Asia/Ho_Chi_Minh',
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
       };
 
       setMessages(prev => [...prev, botMsg]);
@@ -182,7 +194,11 @@ const ChatbotPage: React.FC = () => {
         id: Date.now() + 1,
         sender: 'bot',
         text: `⚠️ Đã xảy ra lỗi: ${error.message}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString('vi-VN', { 
+          timeZone: 'Asia/Ho_Chi_Minh',
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {

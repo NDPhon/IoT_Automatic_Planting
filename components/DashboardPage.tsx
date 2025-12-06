@@ -98,8 +98,13 @@ const DashboardPage: React.FC = () => {
         const formattedData = sortedData.map((item: any) => {
           const date = new Date(item.created_at);
           return {
-            // Using HH:mm:ss because data points are close together (seconds apart)
-            time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            // Using HH:mm:ss with forced Vietnam Timezone
+            time: date.toLocaleTimeString('vi-VN', { 
+              timeZone: 'Asia/Ho_Chi_Minh',
+              hour: '2-digit', 
+              minute: '2-digit', 
+              second: '2-digit' 
+            }),
             moisture: parseFloat(item.do_am_dat)
           };
         });
@@ -168,7 +173,12 @@ const DashboardPage: React.FC = () => {
         // Update Chart Data (Real-time effect)
         // Use created_at from API instead of new Date()
         const timestamp = data.created_at ? new Date(data.created_at) : new Date();
-        const timeString = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const timeString = timestamp.toLocaleTimeString('vi-VN', { 
+          timeZone: 'Asia/Ho_Chi_Minh',
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        });
         
         setChartData(prevData => {
           // Avoid duplicate time points if API returns same data quickly
@@ -439,7 +449,7 @@ const DashboardPage: React.FC = () => {
             </ResponsiveContainer>
           </div>
           <div className="mt-4 text-center">
-             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây) - Cập nhật tự động mỗi 5 phút</p>
+             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây - GMT+7) - Cập nhật tự động mỗi 5 phút</p>
           </div>
         </div>
 
