@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -7,30 +7,122 @@ import {
   Clock, 
   History, 
   Search,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Mock Data for History Logs
-const mockHistoryData = [
-  { id: 1, startTime: '15/11/2025 14:30', endTime: '15/11/2025 14:45', duration: '15 phút', mode: 'Tự động', moistureBefore: '48%', moistureAfter: '72%', reason: 'Đạt Ngưỡng Thấp (50%)' },
-  { id: 2, startTime: '15/11/2025 08:00', endTime: '15/11/2025 08:05', duration: '5 phút', mode: 'Thủ công', moistureBefore: '65%', moistureAfter: '70%', reason: 'Thao tác bằng tay' },
-  { id: 3, startTime: '14/11/2025 21:15', endTime: '14/11/2025 21:25', duration: '10 phút', mode: 'Tự động', moistureBefore: '49%', moistureAfter: '68%', reason: 'Đạt Ngưỡng Thấp (50%)' },
-  { id: 4, startTime: '13/11/2025 10:40', endTime: '13/11/2025 10:50', duration: '10 phút', mode: 'Tự động', moistureBefore: '52%', moistureAfter: '75%', reason: 'Ngưỡng 55% cũ' },
-  { id: 5, startTime: '12/11/2025 06:00', endTime: '12/11/2025 06:20', duration: '20 phút', mode: 'Tự động', moistureBefore: '45%', moistureAfter: '80%', reason: 'Lịch định kỳ' },
-  { id: 6, startTime: '11/11/2025 18:30', endTime: '11/11/2025 18:35', duration: '5 phút', mode: 'Thủ công', moistureBefore: '60%', moistureAfter: '64%', reason: 'Thao tác bằng tay' },
-];
+// Interface matching the provided API response
+interface HistoryLog {
+  id: number;
+  start_time: string;
+  end_time: string;
+  duration: {
+    minutes: number;
+  };
+  mode: string;
+  reason: string;
+}
 
 const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [filterMode, setFilterMode] = useState('All');
-  const [startDate, setStartDate] = useState('2025-11-01');
-  const [endDate, setEndDate] = useState('2025-11-15');
+  const [historyData, setHistoryData] = useState<HistoryLog[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState('');
 
-  // Derived stats based on mock data (static for demo)
-  const totalWatering = 45;
-  const avgDuration = 12.5;
-  const totalWaterVolume = 150;
+  // Mock stats (giữ nguyên hoặc tính toán dựa trên page hiện tại, 
+  // vì API phân trang không trả về tổng số liệu thống kê toàn hệ thống)
+  const [stats, setStats] = useState({
+    totalCount: 0,
+    avgDuration: 0,
+    totalVolume: 0 // Mock value
+  });
+
+  useEffect(() => {
+    fetchHistoryData(currentPage);
+  }, [currentPage]);
+
+  const fetchHistoryData = async (page: number) => {
+    setIsLoading(true);
+    setError('');
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/auth/login');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/history/get?page=${page}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const text = await response.text();
+      let jsonData;
+      try {
+        jsonData = JSON.parse(text);
+      } catch (e) {
+        throw new Error("Phản hồi từ máy chủ không hợp lệ");
+      }
+
+      if (response.ok && jsonData.code === 200) {
+        setHistoryData(jsonData.data || []);
+        
+        // Cập nhật thống kê sơ bộ dựa trên trang hiện tại (tạm thời)
+        if (jsonData.data && jsonData.data.length > 0) {
+            const currentTotalDuration = jsonData.data.reduce((acc: number, item: HistoryLog) => acc + (item.duration?.minutes || 0), 0);
+            setStats({
+                totalCount: jsonData.data.length, // Số lượng trên trang này
+                avgDuration: Math.round(currentTotalDuration / jsonData.data.length),
+                totalVolume: 150 // Hardcoded mock
+            });
+        }
+      } else {
+        setError(jsonData.message || 'Không thể tải dữ liệu lịch sử');
+        setHistoryData([]);
+      }
+    } catch (err: any) {
+      console.error("Fetch history error:", err);
+      setError('Lỗi kết nối đến máy chủ');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    // Vì API không trả về tổng số trang, ta cho phép next nếu trang hiện tại có dữ liệu
+    // Nếu trang sau rỗng, người dùng sẽ thấy bảng trống và quay lại.
+    if (historyData.length > 0) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-10">
@@ -62,29 +154,29 @@ const HistoryPage: React.FC = () => {
           
           {/* Summary Stats Cards */}
           <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-green-700 mb-6 border-b border-gray-100 pb-2">Tóm Tắt Tưới Tiêu</h2>
+            <h2 className="text-lg font-semibold text-green-700 mb-6 border-b border-gray-100 pb-2">Thống Kê (Trang hiện tại)</h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
               
               {/* Stat 1 */}
               <div className="flex flex-col items-center justify-center p-2">
-                <span className="text-4xl font-bold text-blue-500 mb-2">{totalWatering}</span>
-                <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">Tổng số lần tưới</span>
+                <span className="text-4xl font-bold text-blue-500 mb-2">{stats.totalCount}</span>
+                <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">Lượt tưới</span>
               </div>
 
               {/* Stat 2 */}
               <div className="flex flex-col items-center justify-center p-2">
                 <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-4xl font-bold text-green-500">{avgDuration}</span>
+                  <span className="text-4xl font-bold text-green-500">{stats.avgDuration}</span>
                   <span className="text-lg text-green-600 font-medium">phút</span>
                 </div>
-                <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">Thời gian trung bình</span>
+                <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">TB Thời gian</span>
               </div>
 
               {/* Stat 3 */}
               <div className="flex flex-col items-center justify-center p-2">
                 <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-4xl font-bold text-cyan-500">{totalWaterVolume}</span>
+                  <span className="text-4xl font-bold text-cyan-500">--</span>
                   <span className="text-lg text-cyan-600 font-medium">Lít</span>
                 </div>
                 <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">Tổng lượng nước</span>
@@ -93,54 +185,19 @@ const HistoryPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Filter Section */}
-          <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          {/* Filter Section (UI Only for now as API implies simple pagination) */}
+          <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 opacity-75">
             <h2 className="text-lg font-semibold text-green-700 mb-4 flex items-center gap-2">
               <Filter size={20} />
-              Bộ Lọc Lịch Sử
+              Bộ Lọc (Demo)
             </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Từ Ngày:</label>
-                <div className="relative">
-                  <input 
-                    type="date" 
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                  />
-                  <Calendar className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                </div>
+             <p className="text-sm text-gray-500 mb-4">Tính năng lọc theo ngày đang được phát triển.</p>
+            <div className="space-y-4 pointer-events-none">
+              <div className="relative">
+                 <input type="date" className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100" />
+                 <Calendar className="absolute left-3 top-2.5 text-gray-400" size={16} />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Đến Ngày:</label>
-                <div className="relative">
-                  <input 
-                    type="date" 
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                  />
-                  <Calendar className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Chế độ:</label>
-                <select 
-                  value={filterMode}
-                  onChange={(e) => setFilterMode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                >
-                  <option value="All">Tất cả</option>
-                  <option value="Auto">Tự động</option>
-                  <option value="Manual">Thủ công</option>
-                </select>
-              </div>
-
-              <button className="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+              <button className="w-full mt-2 bg-gray-400 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 text-sm cursor-not-allowed">
                 <Search size={16} />
                 Lọc Dữ Liệu
               </button>
@@ -149,7 +206,7 @@ const HistoryPage: React.FC = () => {
         </div>
 
         {/* History Table Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px] flex flex-col">
           <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-green-700">Lịch Sử Tưới Nước Chi Tiết</h2>
             <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
@@ -157,7 +214,7 @@ const HistoryPage: React.FC = () => {
             </button>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-teal-700 text-white text-sm uppercase tracking-wider">
@@ -165,55 +222,82 @@ const HistoryPage: React.FC = () => {
                   <th className="px-6 py-4 font-medium">Thời Gian Kết Thúc</th>
                   <th className="px-6 py-4 font-medium">Thời Lượng</th>
                   <th className="px-6 py-4 font-medium">Chế Độ</th>
-                  <th className="px-6 py-4 font-medium">Độ Ẩm Trước</th>
-                  <th className="px-6 py-4 font-medium">Độ Ẩm Sau</th>
+                  {/* API không trả về độ ẩm trước/sau nên tạm ẩn để giao diện sạch sẽ */}
                   <th className="px-6 py-4 font-medium rounded-tr-lg">Nguyên Nhân</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-                {mockHistoryData.map((item, index) => (
-                  <tr 
-                    key={item.id} 
-                    className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">{item.startTime}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{item.endTime}</td>
-                    <td className="px-6 py-4 font-medium flex items-center gap-1">
-                      <Clock size={14} className="text-gray-400" />
-                      {item.duration}
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center text-teal-600">
+                        <Loader2 className="animate-spin mb-2" size={32} />
+                        <p>Đang tải dữ liệu trang {currentPage}...</p>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        item.mode === 'Tự động' 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {item.mode}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-orange-600 font-medium">{item.moistureBefore}</td>
-                    <td className="px-6 py-4 text-green-600 font-medium">{item.moistureAfter}</td>
-                    <td className="px-6 py-4 text-gray-500 italic">{item.reason}</td>
                   </tr>
-                ))}
+                ) : error ? (
+                  <tr>
+                     <td colSpan={5} className="px-6 py-8 text-center text-red-500">
+                       <p>{error}</p>
+                     </td>
+                  </tr>
+                ) : historyData.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                      <Droplets className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                      <p>Không có dữ liệu nào ở trang này.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  historyData.map((item, index) => (
+                    <tr 
+                      key={item.id} 
+                      className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.start_time)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.end_time)}</td>
+                      <td className="px-6 py-4 font-medium flex items-center gap-1">
+                        <Clock size={14} className="text-gray-400" />
+                        {item.duration?.minutes} phút
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          item.mode === 'Tự động' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {item.mode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 italic max-w-xs truncate" title={item.reason}>
+                        {item.reason}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
           
-          {/* Empty State (Hidden if data exists) */}
-          {mockHistoryData.length === 0 && (
-             <div className="p-12 text-center text-gray-500">
-               <Droplets className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-               <p>Chưa có dữ liệu lịch sử tưới nào.</p>
-             </div>
-          )}
-
-          {/* Pagination (Static for demo) */}
+          {/* Pagination Controls */}
           <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-            <span className="text-sm text-gray-500">Hiển thị 1 đến 6 của 45 kết quả</span>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-600 text-sm hover:bg-gray-50 disabled:opacity-50" disabled>Trước</button>
-              <button className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-600 text-sm hover:bg-gray-50">Sau</button>
+            <span className="text-sm text-gray-500">Trang hiện tại: <span className="font-bold text-gray-800">{currentPage}</span></span>
+            <div className="flex gap-3">
+              <button 
+                onClick={handlePrevPage}
+                disabled={currentPage === 1 || isLoading}
+                className="flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft size={16} /> Trước
+              </button>
+              <button 
+                onClick={handleNextPage}
+                disabled={isLoading || historyData.length === 0} // Nếu không có data, không cho next
+                className="flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Sau <ChevronRight size={16} />
+              </button>
             </div>
           </div>
         </div>
