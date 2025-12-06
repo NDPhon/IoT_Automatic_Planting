@@ -172,12 +172,17 @@ const DashboardPage: React.FC = () => {
         });
 
         // Update Chart Data (Real-time effect)
-        // Use raw 'created_at' from response as requested
-        const timeString = data.created_at;
+        // Switch to using Laptop/Client time so the chart moves forward in realtime
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
         
         if (timeString) {
           setChartData(prevData => {
-            // Avoid duplicate time points if API returns same data
+            // Avoid duplicate time points if called too quickly
             if (prevData.length > 0 && prevData[prevData.length - 1].time === timeString) {
               return prevData;
             }
