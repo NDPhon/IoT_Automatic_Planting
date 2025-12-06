@@ -126,7 +126,8 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/sensors/current', {
+      // Updated to new endpoint
+      const response = await fetch('http://localhost:8000/api/sensors', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -151,15 +152,21 @@ const DashboardPage: React.FC = () => {
         return;
       }
 
+      // Handle both wrapped {code: 200, data: ...} and flat object structures
+      let data = jsonData;
       if (jsonData.code === 200 && jsonData.data) {
-        const data = jsonData.data;
+        data = jsonData.data;
+      }
+
+      // Validate data existence
+      if (data && (data.nhiet_do !== undefined || data.do_am_dat !== undefined)) {
         
         // Parse string values to numbers
-        const newTemp = parseFloat(data.nhiet_do);
-        const newHumidity = parseFloat(data.do_am_khong_khi);
-        const newSoil = parseFloat(data.do_am_dat);
-        const newWater = parseFloat(data.muc_nuoc);
-        const newLight = parseFloat(data.anh_sang);
+        const newTemp = parseFloat(data.nhiet_do || 0);
+        const newHumidity = parseFloat(data.do_am_khong_khi || 0);
+        const newSoil = parseFloat(data.do_am_dat || 0);
+        const newWater = parseFloat(data.muc_nuoc || 0);
+        const newLight = parseFloat(data.anh_sang || 0);
 
         // Update Sensor State
         setSensorData({
@@ -171,8 +178,8 @@ const DashboardPage: React.FC = () => {
         });
 
         // Update Chart Data (Real-time effect)
-        // Use created_at from API instead of new Date()
-        const timestamp = data.created_at ? new Date(data.created_at) : new Date();
+        // Use client-side current time as requested "(created_at sẽ lấy thời gian hiện tại giống trang Control)"
+        const timestamp = new Date();
         const timeString = timestamp.toLocaleTimeString('vi-VN', { 
           timeZone: 'Asia/Ho_Chi_Minh',
           hour: '2-digit', 
@@ -193,7 +200,7 @@ const DashboardPage: React.FC = () => {
         });
 
       } else {
-        console.error("API Error Message:", jsonData.message);
+        console.error("API response format not recognized:", jsonData);
       }
 
     } catch (error) {
