@@ -169,7 +169,7 @@ const ControlPage: React.FC = () => {
   const fetchCurrentMoisture = async (): Promise<number> => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('http://localhost:8000/api/sensors/', {
+      const response = await fetch('http://localhost:8000/api/sensors/current', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const json = await response.json();
