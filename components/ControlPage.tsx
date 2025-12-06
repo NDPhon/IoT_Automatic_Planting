@@ -93,23 +93,110 @@ const ControlPage: React.FC = () => {
     setSaveStatus('idle');
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     setSaveStatus('saving');
-    // TODO: Implement POST /api/system/update here later
-    setTimeout(() => {
-      setSaveStatus('saved');
-      setHasChanges(false);
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    }, 800);
+    const token = localStorage.getItem('token');
+    if (!token) {
+       navigate('/auth/login');
+       return;
+    }
+
+    try {
+      // API Update System Config
+      const response = await fetch('http://localhost:8000/api/system/modify', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          moisture_threshold: thresholds.soilMoisture.toString(),
+          humidity_threshold: thresholds.airHumidity.toString(),
+          temperature_limit: thresholds.temperature.toString(),
+          light_threshold: thresholds.lightIntensity.toString()
+        })
+      });
+
+      const resData = await response.json();
+
+      if (response.ok && resData.code === 200) {
+        setSaveStatus('saved');
+        setHasChanges(false);
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        alert(resData.message || "Lỗi khi lưu cấu hình!");
+        setSaveStatus('idle');
+      }
+    } catch (error) {
+      console.error("Save settings error:", error);
+      alert("Không thể kết nối đến máy chủ.");
+      setSaveStatus('idle');
+    }
   };
 
-  const togglePump = (status: boolean) => {
+  const handleChangeMode = async (targetModeIsAuto: boolean) => {
+    // Optimistic UI update handled by API response mostly, but we can show loading if needed
+    const token = localStorage.getItem('token');
+    const modeString = targetModeIsAuto ? 'AUTO' : 'MANUAL';
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/device/change-mode', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ mode: modeString })
+      });
+
+      const resData = await response.json();
+
+      if (response.ok && resData.code === 200) {
+        setIsAutoMode(targetModeIsAuto);
+        // Cập nhật luôn trạng thái bơm nếu server trả về (để đồng bộ)
+        if (resData.data && resData.data.pump_status) {
+          setPumpStatus(resData.data.pump_status === 'ON');
+        }
+      } else {
+        alert(resData.message || "Không thể thay đổi chế độ.");
+      }
+    } catch (error) {
+      console.error("Change mode error:", error);
+      alert("Lỗi kết nối khi đổi chế độ.");
+    }
+  };
+
+  const togglePump = async (targetStatus: boolean) => {
     if (isAutoMode) {
       alert("Vui lòng chuyển sang chế độ Thủ công (Manual) để điều khiển bơm!");
       return;
     }
-    // TODO: Implement POST /api/device/control later
-    setPumpStatus(status);
+
+    const token = localStorage.getItem('token');
+    const statusString = targetStatus ? 'ON' : 'OFF';
+
+    try {
+      // Dự đoán endpoint dựa trên pattern: api/device/change-mode -> api/device/control-pump
+      const response = await fetch('http://localhost:8000/api/device/control-pump', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: statusString })
+      });
+
+      const resData = await response.json();
+
+      if (response.ok && resData.code === 200) {
+        setPumpStatus(targetStatus);
+      } else {
+        alert(resData.message || "Không thể điều khiển bơm.");
+      }
+    } catch (error) {
+      console.error("Toggle pump error:", error);
+      alert("Lỗi kết nối khi điều khiển bơm.");
+    }
   };
 
   if (isLoading) {
@@ -225,7 +312,7 @@ const ControlPage: React.FC = () => {
                     name="mode" 
                     className="sr-only"
                     checked={!isAutoMode} 
-                    onChange={() => setIsAutoMode(false)}
+                    onChange={() => handleChangeMode(false)}
                   />
                   <div className={`mt-0.5 mr-4 w-5 h-5 rounded-full border-2 flex items-center justify-center
                     ${!isAutoMode ? 'border-blue-600' : 'border-gray-400'}`}>
@@ -250,7 +337,7 @@ const ControlPage: React.FC = () => {
                     name="mode" 
                     className="sr-only"
                     checked={isAutoMode} 
-                    onChange={() => setIsAutoMode(true)}
+                    onChange={() => handleChangeMode(true)}
                   />
                   <div className={`mt-0.5 mr-4 w-5 h-5 rounded-full border-2 flex items-center justify-center
                     ${isAutoMode ? 'border-green-600' : 'border-gray-400'}`}>
