@@ -23,6 +23,7 @@ const ControlPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Ref để lưu trạng thái phiên tưới (khi bật bơm)
+  // startMoisture: độ ẩm lúc bắt đầu bật bơm
   const sessionRef = useRef<{ startTime: Date | null; startMoisture: number }>({
     startTime: null,
     startMoisture: 0
@@ -82,7 +83,16 @@ const ControlPage: React.FC = () => {
         const deviceJson = await deviceRes.json();
         if (deviceJson.code === 200 && deviceJson.data) {
           setIsAutoMode(deviceJson.data.mode === 'AUTO');
-          setPumpStatus(deviceJson.data.pump_status === 'ON');
+          const isPumpOn = deviceJson.data.pump_status === 'ON';
+          setPumpStatus(isPumpOn);
+
+          // Nếu khi load trang mà bơm đang BẬT, ta thiết lập thời gian bắt đầu giả định là thời điểm load trang
+          // để nếu người dùng tắt ngay sau đó thì vẫn có dữ liệu start_time hợp lệ.
+          if (isPumpOn && sessionRef.current.startTime === null) {
+            sessionRef.current.startTime = new Date();
+             // Không lấy được độ ẩm lúc bật trước đó nên lấy tạm giá trị hiện tại nếu cần, 
+             // nhưng tốt nhất để 0 hoặc gọi API sensor ngay tại đây.
+          }
         }
       }
 
@@ -93,7 +103,7 @@ const ControlPage: React.FC = () => {
     }
   };
 
-  // Helper: Lấy độ ẩm hiện tại để ghi log
+  // Helper: Lấy độ ẩm hiện tại từ API để ghi log chính xác
   const fetchCurrentMoisture = async (): Promise<number> => {
     const token = localStorage.getItem('token');
     try {
@@ -110,10 +120,14 @@ const ControlPage: React.FC = () => {
     return 0;
   };
 
-  // Helper: Format Date 'YYYY-MM-DD HH:mm'
+  // Helper: Format Date 'YYYY-MM-DD HH:mm' (Theo giờ địa phương của máy người dùng)
   const formatDateForApi = (date: Date) => {
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
   // Helper: Ghi lịch sử
@@ -230,7 +244,7 @@ const ControlPage: React.FC = () => {
     const token = localStorage.getItem('token');
     const statusString = targetStatus ? 'ON' : 'OFF';
 
-    // 1. Lấy dữ liệu cảm biến hiện tại (dùng cho log history)
+    // 1. Lấy độ ẩm hiện tại (dữ liệu thực tế từ cảm biến)
     const currentMoisture = await fetchCurrentMoisture();
 
     try {
@@ -248,24 +262,44 @@ const ControlPage: React.FC = () => {
       if (response.ok && resData.code === 200) {
         setPumpStatus(targetStatus);
 
-        // --- XỬ LÝ LỊCH SỬ ---
+        // --- XỬ LÝ LỊCH SỬ (Chỉ thêm khi TẮT bơm) ---
         if (targetStatus === true) {
-          // Bắt đầu bật bơm: Lưu thời gian và độ ẩm bắt đầu
+          // =========================
+          // TRƯỜNG HỢP: BẬT BƠM
+          // =========================
+          // Chỉ lưu thời điểm bắt đầu và độ ẩm lúc bắt đầu vào biến tạm (Ref)
+          // Không gọi API history ở đây
           sessionRef.current = {
             startTime: new Date(),
             startMoisture: currentMoisture
           };
-        } else {
-          // Tắt bơm: Tính toán và gửi log
-          const endTime = new Date();
-          // Nếu trang bị reload mất startTime, fallback là 1 phút trước hoặc chính endTime
-          const startTime = sessionRef.current.startTime || new Date(endTime.getTime() - 60000); 
-          const startMois = sessionRef.current.startTime ? sessionRef.current.startMoisture : currentMoisture;
+          console.log("Pump ON: Session started at", sessionRef.current.startTime);
 
-          // Gọi API thêm lịch sử (không cần await để tránh chặn UI)
+        } else {
+          // =========================
+          // TRƯỜNG HỢP: TẮT BƠM
+          // =========================
+          // Khi tắt bơm mới chốt sổ và gửi log lên server
+          
+          const endTime = new Date();
+          
+          // Lấy start time từ ref. 
+          // Nếu null (do F5 trang hoặc lỗi), fallback lấy thời gian hiện tại trừ đi 1 phút
+          let startTime = sessionRef.current.startTime;
+          let startMois = sessionRef.current.startMoisture;
+
+          if (!startTime) {
+             console.warn("Missing start time (session lost), estimating start time.");
+             startTime = new Date(endTime.getTime() - 60000); // Trừ 1 phút
+             startMois = currentMoisture; // Giả định độ ẩm không đổi nếu mất session
+          }
+
+          // Gọi API thêm lịch sử
+          // moisure_before: độ ẩm lúc bật
+          // moisure_after: độ ẩm hiện tại (lúc tắt)
           saveHistoryLog(startTime, endTime, startMois, currentMoisture);
           
-          // Reset ref
+          // Reset ref sau khi đã lưu
           sessionRef.current = { startTime: null, startMoisture: 0 };
         }
 
