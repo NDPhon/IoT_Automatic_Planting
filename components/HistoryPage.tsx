@@ -38,7 +38,6 @@ const HistoryPage: React.FC = () => {
   const [stats, setStats] = useState({
     totalCount: 0,
     avgDuration: 0,
-    totalVolume: 0 // Mock value
   });
 
   useEffect(() => {
@@ -81,7 +80,6 @@ const HistoryPage: React.FC = () => {
             setStats({
                 totalCount: jsonData.data.length, // Số lượng trên trang này
                 avgDuration: Math.round(currentTotalDuration / jsonData.data.length),
-                totalVolume: 150 // Hardcoded mock
             });
         }
       } else {
@@ -156,7 +154,7 @@ const HistoryPage: React.FC = () => {
           <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-semibold text-green-700 mb-6 border-b border-gray-100 pb-2">Thống Kê (Trang hiện tại)</h2>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
               
               {/* Stat 1 */}
               <div className="flex flex-col items-center justify-center p-2">
@@ -171,15 +169,6 @@ const HistoryPage: React.FC = () => {
                   <span className="text-lg text-green-600 font-medium">phút</span>
                 </div>
                 <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">TB Thời gian</span>
-              </div>
-
-              {/* Stat 3 */}
-              <div className="flex flex-col items-center justify-center p-2">
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-4xl font-bold text-cyan-500">--</span>
-                  <span className="text-lg text-cyan-600 font-medium">Lít</span>
-                </div>
-                <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">Tổng lượng nước</span>
               </div>
 
             </div>
