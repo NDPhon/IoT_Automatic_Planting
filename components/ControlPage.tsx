@@ -176,8 +176,8 @@ const ControlPage: React.FC = () => {
     const statusString = targetStatus ? 'ON' : 'OFF';
 
     try {
-      // Dự đoán endpoint dựa trên pattern: api/device/change-mode -> api/device/control-pump
-      const response = await fetch('http://localhost:8000/api/device/control-pump', {
+      // Updated endpoint as requested
+      const response = await fetch('http://localhost:8000/api/device/change-pump-status', {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
