@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Droplets, 
@@ -9,26 +9,83 @@ import {
   Sun, 
   Save, 
   Activity, 
-  AlertCircle 
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ControlPage: React.FC = () => {
   const navigate = useNavigate();
-  // Mock States
+  
+  // State quản lý dữ liệu
   const [pumpStatus, setPumpStatus] = useState(false); // false = OFF
   const [isAutoMode, setIsAutoMode] = useState(true);
-  
+  const [isLoading, setIsLoading] = useState(true);
+
   // Threshold Configuration States
   const [thresholds, setThresholds] = useState({
     soilMoisture: 50,
-    temperature: 35, // Max temp to stop watering? Or min? Assuming safe operating limits.
+    temperature: 35,
     airHumidity: 40,
-    lightIntensity: 80 // Lux or %
+    lightIntensity: 80
   });
 
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Gọi API lấy dữ liệu khi trang load
+  useEffect(() => {
+    fetchControlData();
+  }, []);
+
+  const fetchControlData = async () => {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/auth/login');
+      return;
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      // Gọi song song 2 API để tối ưu tốc độ
+      const [systemRes, deviceRes] = await Promise.all([
+        fetch('http://localhost:8000/api/system/get', { headers }),
+        fetch('http://localhost:8000/api/device/get', { headers })
+      ]);
+
+      // Xử lý System Config
+      if (systemRes.ok) {
+        const systemJson = await systemRes.json();
+        if (systemJson.code === 200 && systemJson.data) {
+          setThresholds({
+            soilMoisture: systemJson.data.soil_moisture_threshold,
+            temperature: systemJson.data.temperature_limit,
+            airHumidity: systemJson.data.air_humidity_threshold,
+            lightIntensity: systemJson.data.light_threshold
+          });
+        }
+      }
+
+      // Xử lý Device Status
+      if (deviceRes.ok) {
+        const deviceJson = await deviceRes.json();
+        if (deviceJson.code === 200 && deviceJson.data) {
+          setIsAutoMode(deviceJson.data.mode === 'AUTO');
+          setPumpStatus(deviceJson.data.pump_status === 'ON');
+        }
+      }
+
+    } catch (error) {
+      console.error("Lỗi khi tải dữ liệu điều khiển:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleThresholdChange = (key: string, value: number) => {
     setThresholds(prev => ({ ...prev, [key]: value }));
@@ -38,7 +95,7 @@ const ControlPage: React.FC = () => {
 
   const handleSaveSettings = () => {
     setSaveStatus('saving');
-    // Simulate API call
+    // TODO: Implement POST /api/system/update here later
     setTimeout(() => {
       setSaveStatus('saved');
       setHasChanges(false);
@@ -51,8 +108,18 @@ const ControlPage: React.FC = () => {
       alert("Vui lòng chuyển sang chế độ Thủ công (Manual) để điều khiển bơm!");
       return;
     }
+    // TODO: Implement POST /api/device/control later
     setPumpStatus(status);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <Loader2 size={48} className="text-blue-600 animate-spin mb-4" />
+        <p className="text-gray-500 font-medium">Đang đồng bộ dữ liệu hệ thống...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-10">
@@ -334,7 +401,8 @@ const ControlPage: React.FC = () => {
                 Giám Sát Realtime
               </h2>
 
-              {/* Main Sensor: Soil Moisture */}
+              {/* Main Sensor: Soil Moisture (Hiện tại vẫn dùng hardcode vì API chỉ cho System/Device, 
+                 nếu muốn realtime cảm biến cần gọi thêm API sensors) */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 mb-6 border border-blue-100">
                 <div className="flex items-start gap-4">
                   <div className="bg-white p-3 rounded-full shadow-sm text-blue-500">
@@ -343,6 +411,7 @@ const ControlPage: React.FC = () => {
                   <div>
                     <p className="text-gray-500 text-sm font-medium">Độ ẩm Đất Hiện Tại:</p>
                     <div className="flex items-baseline gap-1">
+                      {/* Placeholder: Thực tế nên lấy từ API sensors */}
                       <span className="text-4xl font-bold text-gray-800">58</span>
                       <span className="text-xl text-gray-500 font-semibold">%</span>
                     </div>
@@ -353,23 +422,30 @@ const ControlPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* System Logs / Alerts */}
+              {/* System Logs / Alerts - Reflecting Real State */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <h3 className="font-semibold text-gray-700 mb-3 text-sm">Cảnh báo Hệ thống</h3>
+                <h3 className="font-semibold text-gray-700 mb-3 text-sm">Trạng thái Hệ thống</h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2 bg-green-100 p-2 rounded border border-green-200">
                     <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-green-500 flex-shrink-0"></div>
                     <div>
-                      <p className="text-xs text-green-800 font-medium">Hệ thống đang hoạt động ổn định.</p>
-                      <p className="text-[10px] text-green-600">10:30:05 AM</p>
+                      <p className="text-xs text-green-800 font-medium">Chế độ hoạt động: {isAutoMode ? 'TỰ ĐỘNG' : 'THỦ CÔNG'}</p>
+                      <p className="text-[10px] text-green-600">Đồng bộ từ thiết bị</p>
                     </div>
                   </div>
-                  {pumpStatus && (
+                  {pumpStatus ? (
                      <div className="flex items-start gap-2 bg-blue-100 p-2 rounded border border-blue-200">
                       <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-blue-500 flex-shrink-0 animate-pulse"></div>
                       <div>
-                        <p className="text-xs text-blue-800 font-medium">Máy bơm đang chạy (Manual).</p>
-                        <p className="text-[10px] text-blue-600">Vừa xong</p>
+                        <p className="text-xs text-blue-800 font-medium">Máy bơm đang CHẠY.</p>
+                        <p className="text-[10px] text-blue-600">Cập nhật thời gian thực</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 bg-gray-200 p-2 rounded border border-gray-300">
+                      <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-500 flex-shrink-0"></div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-medium">Máy bơm đang TẮT.</p>
                       </div>
                     </div>
                   )}
@@ -377,10 +453,10 @@ const ControlPage: React.FC = () => {
               </div>
               
               <div className="mt-4 pt-4 border-t border-gray-100 text-right">
-                 <p className="text-xs text-gray-400">Kết nối dữ liệu qua: MQTT</p>
+                 <p className="text-xs text-gray-400">Dữ liệu cấu hình: ID {thresholds.soilMoisture > 0 ? 'Loaded' : '...'}</p>
                  <div className="flex items-center justify-end gap-1 mt-1">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-xs text-green-600 font-medium">Connected</span>
+                    <span className="text-xs text-green-600 font-medium">API Connected</span>
                  </div>
               </div>
 
