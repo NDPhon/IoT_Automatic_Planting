@@ -40,10 +40,73 @@ const ControlPage: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
+  // Helper: Format Date 'YYYY-MM-DD HH:mm' (Theo múi giờ Asia/Ho_Chi_Minh)
+  const formatDateForApi = (date: Date) => {
+    // Sử dụng Intl.DateTimeFormat để lấy các thành phần thời gian theo đúng múi giờ VN
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
+    const parts = formatter.formatToParts(date);
+    const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value || '';
+
+    const year = getPart('year');
+    const month = getPart('month');
+    const day = getPart('day');
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+
+    return `${year}-${month}-${day} ${hour}:${minute}`;
+  };
+
   // Gọi API lấy dữ liệu khi trang load
   useEffect(() => {
     fetchControlData();
+
+    // Setup Polling: Gọi API POST mỗi 5 phút để "đọc" (simulate/write) dữ liệu từ ESP32
+    const readSensorInterval = setInterval(triggerReadSensorESP32, 5 * 60 * 1000);
+    
+    return () => clearInterval(readSensorInterval);
   }, []);
+
+  const triggerReadSensorESP32 = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const now = new Date();
+      // Thêm created_at theo múi giờ VN
+      const formattedTime = formatDateForApi(now);
+
+      // Payload giả lập dữ liệu đọc từ ESP32 theo mẫu yêu cầu
+      const payload = {
+        nhiet_do: "25",
+        do_am_khong_khi: "65",
+        do_am_dat: "60",
+        muc_nuoc: "250",
+        anh_sang: "200",
+        created_at: formattedTime
+      };
+
+      await fetch('http://localhost:8000/api/sensors', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      console.log("Đã gọi API đọc dữ liệu ESP32:", payload);
+    } catch (e) {
+      console.error("Lỗi khi gọi API đọc dữ liệu ESP32:", e);
+    }
+  };
 
   const fetchControlData = async () => {
     setIsLoading(true);
@@ -90,8 +153,7 @@ const ControlPage: React.FC = () => {
           // để nếu người dùng tắt ngay sau đó thì vẫn có dữ liệu start_time hợp lệ.
           if (isPumpOn && sessionRef.current.startTime === null) {
             sessionRef.current.startTime = new Date();
-             // Không lấy được độ ẩm lúc bật trước đó nên lấy tạm giá trị hiện tại nếu cần, 
-             // nhưng tốt nhất để 0 hoặc gọi API sensor ngay tại đây.
+             // Không lấy được độ ẩm lúc bật trước đó nên lấy tạm giá trị hiện tại nếu cần
           }
         }
       }
@@ -107,43 +169,29 @@ const ControlPage: React.FC = () => {
   const fetchCurrentMoisture = async (): Promise<number> => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('http://localhost:8000/api/sensors', {
+      const response = await fetch('http://localhost:8000/api/sensors/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const json = await response.json();
-      if (json.code === 200 && json.data) {
+      
+      // Xử lý response dạng mảng (Array)
+      if (json.code === 200 && Array.isArray(json.data) && json.data.length > 0) {
+        // Sắp xếp theo created_at giảm dần (mới nhất lên đầu) để lấy dữ liệu mới nhất
+        const sortedData = json.data.sort((a: any, b: any) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        return parseFloat(sortedData[0].do_am_dat) || 0;
+      }
+      
+      // Fallback: Xử lý nếu data là object đơn lẻ (như code cũ)
+      if (json.code === 200 && json.data && !Array.isArray(json.data)) {
         return parseFloat(json.data.do_am_dat) || 0;
       }
+
     } catch (e) {
       console.error("Không lấy được dữ liệu cảm biến cho log:", e);
     }
     return 0;
-  };
-
-  // Helper: Format Date 'YYYY-MM-DD HH:mm' (Theo múi giờ Asia/Ho_Chi_Minh)
-  const formatDateForApi = (date: Date) => {
-    // Sử dụng Intl.DateTimeFormat để lấy các thành phần thời gian theo đúng múi giờ VN
-    const formatter = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-
-    const parts = formatter.formatToParts(date);
-    const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value || '';
-
-    // en-GB parts usually format as dd/mm/yyyy, hh:mm but formatToParts is safe to pick by type
-    const year = getPart('year');
-    const month = getPart('month');
-    const day = getPart('day');
-    const hour = getPart('hour');
-    const minute = getPart('minute');
-
-    return `${year}-${month}-${day} ${hour}:${minute}`;
   };
 
   // Helper: Ghi lịch sử
