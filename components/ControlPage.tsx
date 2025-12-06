@@ -183,7 +183,7 @@ const ControlPage: React.FC = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: statusString })
+        body: JSON.stringify({ pump_status: statusString })
       });
 
       const resData = await response.json();
