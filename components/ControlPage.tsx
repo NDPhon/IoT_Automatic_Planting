@@ -21,6 +21,7 @@ const ControlPage: React.FC = () => {
   const [pumpStatus, setPumpStatus] = useState(false); // false = OFF
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentMoisture, setCurrentMoisture] = useState(0); // State cho độ ẩm thực tế
 
   // Ref để lưu trạng thái phiên tưới (khi bật bơm)
   // startMoisture: độ ẩm lúc bắt đầu bật bơm
@@ -68,11 +69,22 @@ const ControlPage: React.FC = () => {
   // Gọi API lấy dữ liệu khi trang load
   useEffect(() => {
     fetchControlData();
+    
+    // Lấy độ ẩm ngay khi vào trang
+    fetchCurrentMoisture().then(val => setCurrentMoisture(val));
+
+    // Polling cập nhật độ ẩm hiển thị (mỗi 30s)
+    const monitorInterval = setInterval(() => {
+       fetchCurrentMoisture().then(val => setCurrentMoisture(val));
+    }, 30000);
 
     // Setup Polling: Gọi API POST mỗi 5 phút để "đọc" (simulate/write) dữ liệu từ ESP32
     const readSensorInterval = setInterval(triggerReadSensorESP32, 5 * 60 * 1000);
     
-    return () => clearInterval(readSensorInterval);
+    return () => {
+      clearInterval(monitorInterval);
+      clearInterval(readSensorInterval);
+    };
   }, []);
 
   const triggerReadSensorESP32 = async () => {
@@ -103,6 +115,10 @@ const ControlPage: React.FC = () => {
         body: JSON.stringify(payload)
       });
       console.log("Đã gọi API đọc dữ liệu ESP32:", payload);
+      
+      // Sau khi giả lập đọc xong, cập nhật lại hiển thị ngay
+      fetchCurrentMoisture().then(val => setCurrentMoisture(val));
+      
     } catch (e) {
       console.error("Lỗi khi gọi API đọc dữ liệu ESP32:", e);
     }
@@ -634,7 +650,7 @@ const ControlPage: React.FC = () => {
                       : 'bg-gray-300 cursor-not-allowed'
                     }
                   `}
-                > 
+                >
                   {saveStatus === 'saving' ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -677,7 +693,7 @@ const ControlPage: React.FC = () => {
                     <p className="text-gray-500 text-sm font-medium">Độ ẩm Đất Hiện Tại:</p>
                     <div className="flex items-baseline gap-1">
                       {/* Placeholder: Thực tế nên lấy từ API sensors */}
-                      <span className="text-4xl font-bold text-gray-800">58</span>
+                      <span className="text-4xl font-bold text-gray-800">{currentMoisture}</span>
                       <span className="text-xl text-gray-500 font-semibold">%</span>
                     </div>
                     <div className="mt-2 text-xs font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded inline-block">
