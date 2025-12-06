@@ -92,12 +92,18 @@ const HistoryPage: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleString('vi-VN', {
+      const date = new Date(dateString);
+      // Kiểm tra ngày hợp lệ
+      if (isNaN(date.getTime())) return dateString;
+
+      // Format giống Dashboard: HH:mm:ss dd/mm/yyyy
+      return date.toLocaleString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit', // Thêm giây để giống Dashboard
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
       });
     } catch {
       return dateString;
@@ -215,8 +221,12 @@ const HistoryPage: React.FC = () => {
                       key={item.id} 
                       className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.start_time)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.end_time)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800">
+                        {formatDate(item.start_time)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800">
+                        {formatDate(item.end_time)}
+                      </td>
                       <td className="px-6 py-4 font-medium flex items-center gap-1">
                         <Clock size={14} className="text-gray-400" />
                         {item.duration?.minutes} phút
