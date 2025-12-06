@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
-  Calendar, 
-  Filter, 
   Droplets, 
   Clock, 
   History, 
-  Search,
-  Download,
   ChevronLeft,
   ChevronRight,
   Loader2
@@ -147,11 +143,9 @@ const HistoryPage: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Top Section: Summary Stats & Filter */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          
-          {/* Summary Stats Cards */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* Top Section: Summary Stats Only */}
+        <div className="mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-semibold text-green-700 mb-6 border-b border-gray-100 pb-2">Thống Kê (Trang hiện tại)</h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
@@ -173,34 +167,12 @@ const HistoryPage: React.FC = () => {
 
             </div>
           </div>
-
-          {/* Filter Section (UI Only for now as API implies simple pagination) */}
-          <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 opacity-75">
-            <h2 className="text-lg font-semibold text-green-700 mb-4 flex items-center gap-2">
-              <Filter size={20} />
-              Bộ Lọc (Demo)
-            </h2>
-             <p className="text-sm text-gray-500 mb-4">Tính năng lọc theo ngày đang được phát triển.</p>
-            <div className="space-y-4 pointer-events-none">
-              <div className="relative">
-                 <input type="date" className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100" />
-                 <Calendar className="absolute left-3 top-2.5 text-gray-400" size={16} />
-              </div>
-              <button className="w-full mt-2 bg-gray-400 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 text-sm cursor-not-allowed">
-                <Search size={16} />
-                Lọc Dữ Liệu
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* History Table Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[400px] flex flex-col">
           <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-green-700">Lịch Sử Tưới Nước Chi Tiết</h2>
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
-              <Download size={16} /> Xuất Excel
-            </button>
           </div>
           
           <div className="overflow-x-auto flex-1">
@@ -211,7 +183,6 @@ const HistoryPage: React.FC = () => {
                   <th className="px-6 py-4 font-medium">Thời Gian Kết Thúc</th>
                   <th className="px-6 py-4 font-medium">Thời Lượng</th>
                   <th className="px-6 py-4 font-medium">Chế Độ</th>
-                  {/* API không trả về độ ẩm trước/sau nên tạm ẩn để giao diện sạch sẽ */}
                   <th className="px-6 py-4 font-medium rounded-tr-lg">Nguyên Nhân</th>
                 </tr>
               </thead>
