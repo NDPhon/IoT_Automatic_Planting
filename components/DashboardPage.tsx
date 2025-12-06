@@ -96,15 +96,9 @@ const DashboardPage: React.FC = () => {
 
         // Map to chart format
         const formattedData = sortedData.map((item: any) => {
-          const date = new Date(item.created_at);
           return {
-            // Using HH:mm:ss with forced Vietnam Timezone
-            time: date.toLocaleTimeString('vi-VN', { 
-              timeZone: 'Asia/Ho_Chi_Minh',
-              hour: '2-digit', 
-              minute: '2-digit', 
-              second: '2-digit' 
-            }),
+            // Use raw created_at as requested (no translation/formatting)
+            time: item.created_at,
             moisture: parseFloat(item.do_am_dat)
           };
         });
@@ -178,26 +172,22 @@ const DashboardPage: React.FC = () => {
         });
 
         // Update Chart Data (Real-time effect)
-        // Use client-side current time as requested "(created_at sẽ lấy thời gian hiện tại giống trang Control)"
-        const timestamp = new Date();
-        const timeString = timestamp.toLocaleTimeString('vi-VN', { 
-          timeZone: 'Asia/Ho_Chi_Minh',
-          hour: '2-digit', 
-          minute: '2-digit', 
-          second: '2-digit' 
-        });
+        // Use raw 'created_at' from response as requested
+        const timeString = data.created_at;
         
-        setChartData(prevData => {
-          // Avoid duplicate time points if API returns same data quickly
-          if (prevData.length > 0 && prevData[prevData.length - 1].time === timeString) {
-            return prevData;
-          }
+        if (timeString) {
+          setChartData(prevData => {
+            // Avoid duplicate time points if API returns same data
+            if (prevData.length > 0 && prevData[prevData.length - 1].time === timeString) {
+              return prevData;
+            }
 
-          const newData = [...prevData, { time: timeString, moisture: newSoil }];
-          // Keep only last 20 points to match historical view
-          if (newData.length > 20) return newData.slice(newData.length - 20);
-          return newData;
-        });
+            const newData = [...prevData, { time: timeString, moisture: newSoil }];
+            // Keep only last 20 points to match historical view
+            if (newData.length > 20) return newData.slice(newData.length - 20);
+            return newData;
+          });
+        }
 
       } else {
         console.error("API response format not recognized:", jsonData);
