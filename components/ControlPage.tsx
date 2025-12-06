@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   Droplets, 
@@ -21,6 +21,12 @@ const ControlPage: React.FC = () => {
   const [pumpStatus, setPumpStatus] = useState(false); // false = OFF
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Ref để lưu trạng thái phiên tưới (khi bật bơm)
+  const sessionRef = useRef<{ startTime: Date | null; startMoisture: number }>({
+    startTime: null,
+    startMoisture: 0
+  });
 
   // Threshold Configuration States
   const [thresholds, setThresholds] = useState({
@@ -87,6 +93,57 @@ const ControlPage: React.FC = () => {
     }
   };
 
+  // Helper: Lấy độ ẩm hiện tại để ghi log
+  const fetchCurrentMoisture = async (): Promise<number> => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch('http://localhost:8000/api/sensors/current', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const json = await response.json();
+      if (json.code === 200 && json.data) {
+        return parseFloat(json.data.do_am_dat) || 0;
+      }
+    } catch (e) {
+      console.error("Không lấy được dữ liệu cảm biến cho log:", e);
+    }
+    return 0;
+  };
+
+  // Helper: Format Date 'YYYY-MM-DD HH:mm'
+  const formatDateForApi = (date: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  // Helper: Ghi lịch sử
+  const saveHistoryLog = async (startTime: Date, endTime: Date, startMois: number, endMois: number) => {
+    const token = localStorage.getItem('token');
+    try {
+      const payload = {
+        start_time: formatDateForApi(startTime),
+        end_time: formatDateForApi(endTime),
+        mode: "Thủ công",
+        moisure_before: startMois,
+        moisure_after: endMois,
+        reason: "Người dùng bật/tắt thủ công"
+      };
+
+      console.log("Sending History Log:", payload);
+
+      await fetch('http://localhost:8000/api/history/add', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.error("Lỗi khi lưu lịch sử:", e);
+    }
+  };
+
   const handleThresholdChange = (key: string, value: number) => {
     setThresholds(prev => ({ ...prev, [key]: value }));
     setHasChanges(true);
@@ -135,7 +192,6 @@ const ControlPage: React.FC = () => {
   };
 
   const handleChangeMode = async (targetModeIsAuto: boolean) => {
-    // Optimistic UI update handled by API response mostly, but we can show loading if needed
     const token = localStorage.getItem('token');
     const modeString = targetModeIsAuto ? 'AUTO' : 'MANUAL';
     
@@ -153,7 +209,6 @@ const ControlPage: React.FC = () => {
 
       if (response.ok && resData.code === 200) {
         setIsAutoMode(targetModeIsAuto);
-        // Cập nhật luôn trạng thái bơm nếu server trả về (để đồng bộ)
         if (resData.data && resData.data.pump_status) {
           setPumpStatus(resData.data.pump_status === 'ON');
         }
@@ -175,8 +230,10 @@ const ControlPage: React.FC = () => {
     const token = localStorage.getItem('token');
     const statusString = targetStatus ? 'ON' : 'OFF';
 
+    // 1. Lấy dữ liệu cảm biến hiện tại (dùng cho log history)
+    const currentMoisture = await fetchCurrentMoisture();
+
     try {
-      // Updated endpoint as requested
       const response = await fetch('http://localhost:8000/api/device/change-pump-status', {
         method: 'PATCH',
         headers: {
@@ -190,6 +247,28 @@ const ControlPage: React.FC = () => {
 
       if (response.ok && resData.code === 200) {
         setPumpStatus(targetStatus);
+
+        // --- XỬ LÝ LỊCH SỬ ---
+        if (targetStatus === true) {
+          // Bắt đầu bật bơm: Lưu thời gian và độ ẩm bắt đầu
+          sessionRef.current = {
+            startTime: new Date(),
+            startMoisture: currentMoisture
+          };
+        } else {
+          // Tắt bơm: Tính toán và gửi log
+          const endTime = new Date();
+          // Nếu trang bị reload mất startTime, fallback là 1 phút trước hoặc chính endTime
+          const startTime = sessionRef.current.startTime || new Date(endTime.getTime() - 60000); 
+          const startMois = sessionRef.current.startTime ? sessionRef.current.startMoisture : currentMoisture;
+
+          // Gọi API thêm lịch sử (không cần await để tránh chặn UI)
+          saveHistoryLog(startTime, endTime, startMois, currentMoisture);
+          
+          // Reset ref
+          sessionRef.current = { startTime: null, startMoisture: 0 };
+        }
+
       } else {
         alert(resData.message || "Không thể điều khiển bơm.");
       }
