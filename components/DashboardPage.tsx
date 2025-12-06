@@ -121,7 +121,7 @@ const DashboardPage: React.FC = () => {
 
     try {
       // Updated to new endpoint
-      const response = await fetch('http://localhost:8000/api/sensors', {
+      const response = await fetch('http://localhost:8000/api/sensors/current', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
