@@ -78,51 +78,13 @@ const ControlPage: React.FC = () => {
        fetchCurrentMoisture().then(val => setCurrentMoisture(val));
     }, 30000);
 
-    // Setup Polling: Gọi API POST mỗi 5 phút để "đọc" (simulate/write) dữ liệu từ ESP32
-    const readSensorInterval = setInterval(triggerReadSensorESP32, 5 * 60 * 1000);
+    // NOTE: Logic triggerReadSensorESP32 (POST giả lập dữ liệu mỗi 5 phút) đã được chuyển sang App.tsx
+    // để đảm bảo chạy toàn cục (global) ở mọi trang.
     
     return () => {
       clearInterval(monitorInterval);
-      clearInterval(readSensorInterval);
     };
   }, []);
-
-  const triggerReadSensorESP32 = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-      const now = new Date();
-      // Thêm created_at theo múi giờ VN
-      const formattedTime = formatDateForApi(now);
-
-      // Payload giả lập dữ liệu đọc từ ESP32 theo mẫu yêu cầu
-      const payload = {
-        nhiet_do: "25",
-        do_am_khong_khi: "65",
-        do_am_dat: "60",
-        muc_nuoc: "250",
-        anh_sang: "200",
-        created_at: formattedTime
-      };
-
-      await fetch('http://localhost:8000/api/sensors', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      console.log("Đã gọi API đọc dữ liệu ESP32:", payload);
-      
-      // Sau khi giả lập đọc xong, cập nhật lại hiển thị ngay
-      fetchCurrentMoisture().then(val => setCurrentMoisture(val));
-      
-    } catch (e) {
-      console.error("Lỗi khi gọi API đọc dữ liệu ESP32:", e);
-    }
-  };
 
   const fetchControlData = async () => {
     setIsLoading(true);
