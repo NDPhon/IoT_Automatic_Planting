@@ -169,7 +169,8 @@ const ControlPage: React.FC = () => {
   const fetchCurrentMoisture = async (): Promise<number> => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('http://localhost:8000/api/sensors/current', {
+      // API: http://localhost:8000/api/sensors/
+      const response = await fetch('http://localhost:8000/api/sensors/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const json = await response.json();
@@ -183,7 +184,7 @@ const ControlPage: React.FC = () => {
         return parseFloat(sortedData[0].do_am_dat) || 0;
       }
       
-      // Fallback: Xử lý nếu data là object đơn lẻ (như code cũ)
+      // Fallback: Xử lý nếu data là object đơn lẻ
       if (json.code === 200 && json.data && !Array.isArray(json.data)) {
         return parseFloat(json.data.do_am_dat) || 0;
       }
