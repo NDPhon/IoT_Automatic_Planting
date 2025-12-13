@@ -332,71 +332,7 @@ const ChatbotPage: React.FC = () => {
 
         </div>
 
-        {/* Right: Context/Real-time Data Panel (Hidden on mobile, visible on md+) */}
-        <div className="hidden md:block w-80 bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto">
-          <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <RefreshCw size={18} className="text-gray-500" />
-            Dữ liệu Thời Gian Thực
-          </h2>
 
-          <div className="space-y-4">
-            
-            {/* Moisture Card */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-blue-100">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-xs text-gray-500 font-medium">Độ ẩm Đất Hiện Tại</span>
-                <Droplets size={16} className="text-blue-500" />
-              </div>
-              <div className="text-3xl font-bold text-blue-600">
-                {SYSTEM_DATA.soilMoisture}%
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 mt-3">
-                <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${SYSTEM_DATA.soilMoisture}%` }}></div>
-              </div>
-            </div>
-
-            {/* Pump Status */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-               <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Trạng Thái Bơm</span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${SYSTEM_DATA.pumpStatus ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {SYSTEM_DATA.pumpStatus ? 'Đang Bật' : 'Đang Tắt'}
-                  </span>
-               </div>
-            </div>
-
-            {/* Mode */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-               <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Chế Độ</span>
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-700">
-                    {SYSTEM_DATA.mode}
-                  </span>
-               </div>
-            </div>
-
-            {/* Env Sensors */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white p-3 rounded-xl shadow-sm border border-red-50 flex flex-col items-center text-center">
-                <Thermometer size={20} className="text-red-500 mb-1" />
-                <span className="text-xs text-gray-400">Nhiệt Độ</span>
-                <span className="text-lg font-bold text-gray-700">{SYSTEM_DATA.temperature}°C</span>
-              </div>
-              <div className="bg-white p-3 rounded-xl shadow-sm border border-cyan-50 flex flex-col items-center text-center">
-                <Wind size={20} className="text-cyan-500 mb-1" />
-                <span className="text-xs text-gray-400">Độ Ẩm KK</span>
-                <span className="text-lg font-bold text-gray-700">{SYSTEM_DATA.humidity}%</span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-gray-200">
-               <p className="text-xs text-gray-400 text-center">
-                 Dữ liệu được cập nhật qua MQTT/API
-               </p>
-            </div>
-
-          </div>
-        </div>
       </div>
     </div>
   );
