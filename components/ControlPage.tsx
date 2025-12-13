@@ -10,8 +10,7 @@ import {
   Save, 
   Activity, 
   AlertCircle,
-  Loader2,
-  RefreshCw
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,7 +22,6 @@ const ControlPage: React.FC = () => {
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMoisture, setCurrentMoisture] = useState(0); // State cho độ ẩm thực tế
-  const [isReadingSensor, setIsReadingSensor] = useState(false); // State loading cho nút đọc cảm biến
 
   // Ref để lưu trạng thái phiên tưới (khi bật bơm)
   // startMoisture: độ ẩm lúc bắt đầu bật bơm
@@ -68,52 +66,6 @@ const ControlPage: React.FC = () => {
     return `${year}-${month}-${day} ${hour}:${minute}`;
   };
 
-  // --- HÀM MỚI: MÔ PHỎNG ĐỌC CẢM BIẾN ---
-  // Định nghĩa trước useEffect để có thể gọi trong interval
-  const handleSimulateSensorRead = async () => {
-    setIsReadingSensor(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-        navigate('/auth/login');
-        return;
-    }
-
-    try {
-      // Payload theo yêu cầu
-      const payload = {
-        nhiet_do: "30",
-        do_am_khong_khi: "65",
-        do_am_dat: "70",
-        muc_nuoc: "250",
-        anh_sang: "200",
-        // Thêm created_at để đảm bảo tính chính xác nếu backend cần
-        created_at: formatDateForApi(new Date()) 
-      };
-
-      console.log("Simulating Sensor Read:", payload);
-
-      const response = await fetch('http://localhost:8000/api/sensors', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-         // Cập nhật ngay UI với giá trị mới
-         setCurrentMoisture(70); 
-      } else {
-         console.error("Lỗi khi gọi API sensors:", response.status);
-      }
-    } catch (e) {
-      console.error("Lỗi kết nối:", e);
-    } finally {
-      setIsReadingSensor(false);
-    }
-  };
-
   // Gọi API lấy dữ liệu khi trang load
   useEffect(() => {
     fetchControlData();
@@ -122,10 +74,8 @@ const ControlPage: React.FC = () => {
     fetchCurrentMoisture().then(val => setCurrentMoisture(val));
 
     // Polling cập nhật độ ẩm hiển thị (mỗi 30s)
-    // Và thực hiện mô phỏng đọc cảm biến (theo yêu cầu)
     const monitorInterval = setInterval(() => {
        fetchCurrentMoisture().then(val => setCurrentMoisture(val));
-       handleSimulateSensorRead();
     }, 30000);
 
     // NOTE: Logic triggerReadSensorESP32 (POST giả lập dữ liệu mỗi 5 phút) đã được chuyển sang App.tsx
@@ -715,20 +665,6 @@ const ControlPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* BUTTON MÔ PHỎNG ĐỌC CẢM BIẾN */}
-              <button 
-                onClick={handleSimulateSensorRead}
-                disabled={isReadingSensor}
-                className="w-full mb-6 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
-              >
-                {isReadingSensor ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <RefreshCw size={16} />
-                )}
-                {isReadingSensor ? 'Đang đọc & lưu...' : 'Mô Phỏng Đọc Cảm Biến'}
-              </button>
-
               {/* System Logs / Alerts - Reflecting Real State */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <h3 className="font-semibold text-gray-700 mb-3 text-sm">Trạng thái Hệ thống</h3>
@@ -745,36 +681,4 @@ const ControlPage: React.FC = () => {
                       <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-blue-500 flex-shrink-0 animate-pulse"></div>
                       <div>
                         <p className="text-xs text-blue-800 font-medium">Máy bơm đang CHẠY.</p>
-                        <p className="text-[10px] text-blue-600">Cập nhật thời gian thực</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2 bg-gray-200 p-2 rounded border border-gray-300">
-                      <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-500 flex-shrink-0"></div>
-                      <div>
-                        <p className="text-xs text-gray-700 font-medium">Máy bơm đang TẮT.</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-gray-100 text-right">
-                 <p className="text-xs text-gray-400">Dữ liệu cấu hình: ID {thresholds.soilMoisture > 0 ? 'Loaded' : '...'}</p>
-                 <div className="flex items-center justify-end gap-1 mt-1">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-xs text-green-600 font-medium">API Connected</span>
-                 </div>
-              </div>
-
-            </section>
-
-          </div>
-
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default ControlPage;
+                        <p className="text

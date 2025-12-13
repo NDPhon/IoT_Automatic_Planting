@@ -62,7 +62,7 @@ const App: React.FC = () => {
     };
 
     // Thiết lập interval chạy mỗi 5 phút (300,000 ms)
-    const intervalId = setInterval(triggerReadSensorESP32, 5 * 60 * 1000);
+    const intervalId = setInterval(triggerReadSensorESP32, 30 * 1000);
 
     // Dọn dẹp interval khi App unmount (thường chỉ khi tắt tab)
     return () => clearInterval(intervalId);
