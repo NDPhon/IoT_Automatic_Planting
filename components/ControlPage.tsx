@@ -285,7 +285,7 @@ const ControlPage: React.FC = () => {
     }
 
     const token = localStorage.getItem('token');
-    const statusString = targetStatus ? 'ON' : 'OFF';
+    const statusString = targetStatus ? 1 : 0;
 
     // 1. Lấy độ ẩm hiện tại (dữ liệu thực tế từ cảm biến)
     const currentMoisture = await fetchCurrentMoisture();
