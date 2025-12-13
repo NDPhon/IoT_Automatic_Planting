@@ -209,7 +209,7 @@ const HistoryPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 font-medium flex items-center gap-1">
                         <Clock size={14} className="text-gray-400" />
-                        {item.duration?.minutes} phút
+                        {item.duration?.minutes ?? 0} phút
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${
