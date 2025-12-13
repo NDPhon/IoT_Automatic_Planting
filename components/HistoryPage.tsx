@@ -104,6 +104,24 @@ const HistoryPage: React.FC = () => {
     }
   };
 
+  // Helper to calculate duration in minutes and seconds
+  const calculateDuration = (startTime: string, endTime: string) => {
+    const start = new Date(startTime).getTime();
+    const end = new Date(endTime).getTime();
+
+    if (isNaN(start) || isNaN(end)) return "--";
+
+    const diffMs = end - start;
+    if (diffMs < 0) return "0s";
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    if (minutes === 0) return `${seconds} giây`;
+    return `${minutes} phút ${seconds} giây`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-10">
       {/* Header */}
@@ -209,7 +227,7 @@ const HistoryPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 font-medium flex items-center gap-1">
                         <Clock size={14} className="text-gray-400" />
-                        {item.duration?.minutes ?? 0} phút
+                        {calculateDuration(item.start_time, item.end_time)}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${

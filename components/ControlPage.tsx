@@ -41,7 +41,7 @@ const ControlPage: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // Helper: Format Date 'YYYY-MM-DD HH:mm' (Theo múi giờ Asia/Ho_Chi_Minh)
+  // Helper: Format Date 'YYYY-MM-DD HH:mm:ss' (Theo múi giờ Asia/Ho_Chi_Minh)
   const formatDateForApi = (date: Date) => {
     // Sử dụng Intl.DateTimeFormat để lấy các thành phần thời gian theo đúng múi giờ VN
     const formatter = new Intl.DateTimeFormat('en-GB', {
@@ -51,6 +51,7 @@ const ControlPage: React.FC = () => {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
       hour12: false
     });
 
@@ -62,8 +63,9 @@ const ControlPage: React.FC = () => {
     const day = getPart('day');
     const hour = getPart('hour');
     const minute = getPart('minute');
+    const second = getPart('second');
 
-    return `${year}-${month}-${day} ${hour}:${minute}`;
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
   };
 
   // Gọi API lấy dữ liệu khi trang load
@@ -285,7 +287,7 @@ const ControlPage: React.FC = () => {
     }
 
     const token = localStorage.getItem('token');
-    const statusString = targetStatus ? 1 : 0;
+    const statusString = targetStatus ? 'ON' : 'OFF';
 
     // 1. Lấy độ ẩm hiện tại (dữ liệu thực tế từ cảm biến)
     const currentMoisture = await fetchCurrentMoisture();
