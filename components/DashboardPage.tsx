@@ -45,7 +45,15 @@ const DashboardPage: React.FC = () => {
   // System States
   const [pumpStatus, setPumpStatus] = useState(false); // Default OFF
   const [isAutoMode, setIsAutoMode] = useState(true);
-  const [threshold, setThreshold] = useState(50); // Dynamic threshold from API
+  
+  // System Configuration State (Thresholds)
+  const [systemConfig, setSystemConfig] = useState({
+    soilMoisture: 50,
+    airHumidity: 40,
+    temperature: 35,
+    light: 80
+  });
+
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -60,7 +68,7 @@ const DashboardPage: React.FC = () => {
     fetchSensorData(); // Then load current status
     fetchSystemAndDeviceStatus(); // Load system config and device status
 
-    // 3. Setup Polling (Auto-refresh every 1 minute)
+    // 3. Setup Polling (Auto-refresh every 30 seconds)
     const intervalId = setInterval(() => {
       fetchSensorData();
       fetchSystemAndDeviceStatus();
@@ -89,8 +97,13 @@ const DashboardPage: React.FC = () => {
       if (systemRes.ok) {
         const systemJson = await systemRes.json();
         if (systemJson.code === 200 && systemJson.data) {
-          // Update threshold specifically for Dashboard view
-          setThreshold(systemJson.data.soil_moisture_threshold);
+          // Update all thresholds
+          setSystemConfig({
+            soilMoisture: systemJson.data.soil_moisture_threshold,
+            airHumidity: systemJson.data.air_humidity_threshold,
+            temperature: systemJson.data.temperature_limit,
+            light: systemJson.data.light_threshold
+          });
         }
       }
 
@@ -329,9 +342,9 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-400 text-xs mb-1">Ngưỡng đặt: {threshold}%</p>
-                  <div className={`text-2xl font-bold transition-colors duration-300 ${sensorData.soilMoisture > threshold ? 'text-green-500' : 'text-orange-500'}`}>
-                    {sensorData.soilMoisture > threshold ? 'Đủ nước' : 'Cần tưới'}
+                  <p className="text-gray-400 text-xs mb-1">Ngưỡng đặt: {systemConfig.soilMoisture}%</p>
+                  <div className={`text-2xl font-bold transition-colors duration-300 ${sensorData.soilMoisture > systemConfig.soilMoisture ? 'text-green-500' : 'text-orange-500'}`}>
+                    {sensorData.soilMoisture > systemConfig.soilMoisture ? 'Đủ nước' : 'Cần tưới'}
                   </div>
                 </div>
               </div>
@@ -344,55 +357,79 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Card 2: Status & Controls */}
+          {/* Card 2: Status & Controls & FULL CONFIG */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-semibold text-gray-700 mb-4 border-b border-gray-100 pb-2 flex items-center justify-between">
-              <span>Trạng thái & Cài đặt</span>
+              <span>Trạng thái & Cấu hình</span>
               <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full flex items-center gap-1">
                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div> Live
               </span>
             </h2>
             
-            <div className="space-y-6">
-              {/* Pump Status */}
+            <div className="space-y-4">
+              {/* Status Row */}
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 font-medium">Trạng thái Bơm:</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 ${pumpStatus ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  <span className={`w-2 h-2 rounded-full ${pumpStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                  {pumpStatus ? 'Đang Bật' : 'Đang Tắt'}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${pumpStatus ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${pumpStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  {pumpStatus ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 font-medium">Chế độ:</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${isAutoMode ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                  {isAutoMode ? <Zap size={12} /> : <Settings size={12} />}
+                  {isAutoMode ? 'AUTO' : 'MANUAL'}
                 </span>
               </div>
 
-              {/* Operating Mode */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 font-medium">Chế độ Hoạt động:</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 ${isAutoMode ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-                  {isAutoMode ? <Zap size={14} /> : <Settings size={14} />}
-                  {isAutoMode ? 'Tự động' : 'Thủ công'}
-                </span>
-              </div>
+               {/* Divider */}
+               <div className="border-t border-gray-100 my-2"></div>
 
-               {/* Threshold */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 font-medium">Ngưỡng Độ ẩm:</span>
-                <span className="text-lg font-bold text-gray-800">{threshold}%</span>
-              </div>
+               {/* Configuration Grid */}
+               <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <p className="text-[10px] text-gray-500 uppercase flex items-center gap-1">
+                      <Droplets size={10} className="text-blue-500"/> Ngưỡng Đất
+                    </p>
+                    <p className="font-bold text-gray-800">{systemConfig.soilMoisture}%</p>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <p className="text-[10px] text-gray-500 uppercase flex items-center gap-1">
+                      <Wind size={10} className="text-cyan-500"/> Ngưỡng KK
+                    </p>
+                    <p className="font-bold text-gray-800">{systemConfig.airHumidity}%</p>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <p className="text-[10px] text-gray-500 uppercase flex items-center gap-1">
+                      <Thermometer size={10} className="text-red-500"/> Giới hạn Nhiệt
+                    </p>
+                    <p className="font-bold text-gray-800">{systemConfig.temperature}°C</p>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <p className="text-[10px] text-gray-500 uppercase flex items-center gap-1">
+                      <Sun size={10} className="text-amber-500"/> Ngưỡng Sáng
+                    </p>
+                    <p className="font-bold text-gray-800">{systemConfig.light}%</p>
+                  </div>
+               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-1 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-2 mt-2">
                 <button 
                   onClick={() => navigate('/control')}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-1 shadow-sm"
                 >
-                  <Settings size={18} />
-                  Chuyển sang Manual Control
+                  <Settings size={16} />
+                  Điều khiển
                 </button>
                 <button 
                   onClick={() => navigate('/history')}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-1"
                 >
-                  <History size={18} />
-                  Xem Lịch sử Tưới
+                  <History size={16} />
+                  Lịch sử
                 </button>
               </div>
             </div>
@@ -472,7 +509,7 @@ const DashboardPage: React.FC = () => {
                   <div className="w-3 h-0.5 bg-green-500"></div> Độ ẩm Đất (%)
                </span>
                <span className="flex items-center gap-1 text-xs text-gray-500 ml-2">
-                  <div className="w-3 h-0.5 border-t border-dashed border-orange-400"></div> Ngưỡng {threshold}%
+                  <div className="w-3 h-0.5 border-t border-dashed border-orange-400"></div> Ngưỡng {systemConfig.soilMoisture}%
                </span>
             </div>
           </div>
@@ -497,7 +534,7 @@ const DashboardPage: React.FC = () => {
                   contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   itemStyle={{ color: '#059669', fontWeight: 'bold' }}
                 />
-                <ReferenceLine y={threshold} stroke="#f97316" strokeDasharray="5 5" />
+                <ReferenceLine y={systemConfig.soilMoisture} stroke="#f97316" strokeDasharray="5 5" />
                 <Line 
                   type="monotone" 
                   dataKey="moisture" 
