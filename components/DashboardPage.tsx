@@ -45,7 +45,7 @@ const DashboardPage: React.FC = () => {
   // System States
   const [pumpStatus, setPumpStatus] = useState(false); // Default OFF
   const [isAutoMode, setIsAutoMode] = useState(true);
-  const [threshold] = useState(50); // Hardcoded threshold for now
+  const [threshold, setThreshold] = useState(50); // Dynamic threshold from API
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -58,13 +58,55 @@ const DashboardPage: React.FC = () => {
     // 2. Initial Fetch
     fetchHistoricalData(); // Load history first
     fetchSensorData(); // Then load current status
+    fetchSystemAndDeviceStatus(); // Load system config and device status
 
-    // 3. Setup Polling (Auto-refresh every 5 minutes)
-    const intervalId = setInterval(fetchSensorData, 5 * 60 * 1000);
+    // 3. Setup Polling (Auto-refresh every 1 minute)
+    const intervalId = setInterval(() => {
+      fetchSensorData();
+      fetchSystemAndDeviceStatus();
+    }, 60 * 1000);
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
   }, []);
+
+  const fetchSystemAndDeviceStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const [systemRes, deviceRes] = await Promise.all([
+        fetch('http://localhost:8000/api/system/get', { headers }),
+        fetch('http://localhost:8000/api/device/get', { headers })
+      ]);
+
+      // Xử lý System Config
+      if (systemRes.ok) {
+        const systemJson = await systemRes.json();
+        if (systemJson.code === 200 && systemJson.data) {
+          // Update threshold specifically for Dashboard view
+          setThreshold(systemJson.data.soil_moisture_threshold);
+        }
+      }
+
+      // Xử lý Device Status
+      if (deviceRes.ok) {
+        const deviceJson = await deviceRes.json();
+        if (deviceJson.code === 200 && deviceJson.data) {
+          setIsAutoMode(deviceJson.data.mode === 'AUTO');
+          setPumpStatus(deviceJson.data.pump_status === 'ON');
+        }
+      }
+
+    } catch (error) {
+      console.error("Lỗi khi tải dữ liệu hệ thống/thiết bị:", error);
+    }
+  };
 
   const fetchHistoricalData = async () => {
     const token = localStorage.getItem('token');
