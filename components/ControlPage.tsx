@@ -9,7 +9,7 @@ import {
   Sun, 
   Save, 
   Activity, 
-   AlertCircle,
+  AlertCircle,
   Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -681,4 +681,36 @@ const ControlPage: React.FC = () => {
                       <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-blue-500 flex-shrink-0 animate-pulse"></div>
                       <div>
                         <p className="text-xs text-blue-800 font-medium">Máy bơm đang CHẠY.</p>
-                        <p className="text
+                        <p className="text-[10px] text-blue-600">Cập nhật thời gian thực</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 bg-gray-200 p-2 rounded border border-gray-300">
+                      <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-gray-500 flex-shrink-0"></div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-medium">Máy bơm đang TẮT.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-gray-100 text-right">
+                 <p className="text-xs text-gray-400">Dữ liệu cấu hình: ID {thresholds.soilMoisture > 0 ? 'Loaded' : '...'}</p>
+                 <div className="flex items-center justify-end gap-1 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span className="text-xs text-green-600 font-medium">API Connected</span>
+                 </div>
+              </div>
+
+            </section>
+
+          </div>
+
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default ControlPage;
