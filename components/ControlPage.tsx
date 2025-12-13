@@ -68,6 +68,52 @@ const ControlPage: React.FC = () => {
     return `${year}-${month}-${day} ${hour}:${minute}`;
   };
 
+  // --- HÀM MỚI: MÔ PHỎNG ĐỌC CẢM BIẾN ---
+  // Định nghĩa trước useEffect để có thể gọi trong interval
+  const handleSimulateSensorRead = async () => {
+    setIsReadingSensor(true);
+    const token = localStorage.getItem('token');
+    if (!token) {
+        navigate('/auth/login');
+        return;
+    }
+
+    try {
+      // Payload theo yêu cầu
+      const payload = {
+        nhiet_do: "30",
+        do_am_khong_khi: "65",
+        do_am_dat: "70",
+        muc_nuoc: "250",
+        anh_sang: "200",
+        // Thêm created_at để đảm bảo tính chính xác nếu backend cần
+        created_at: formatDateForApi(new Date()) 
+      };
+
+      console.log("Simulating Sensor Read:", payload);
+
+      const response = await fetch('http://localhost:8000/api/sensors', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+         // Cập nhật ngay UI với giá trị mới
+         setCurrentMoisture(70); 
+      } else {
+         console.error("Lỗi khi gọi API sensors:", response.status);
+      }
+    } catch (e) {
+      console.error("Lỗi kết nối:", e);
+    } finally {
+      setIsReadingSensor(false);
+    }
+  };
+
   // Gọi API lấy dữ liệu khi trang load
   useEffect(() => {
     fetchControlData();
@@ -76,8 +122,10 @@ const ControlPage: React.FC = () => {
     fetchCurrentMoisture().then(val => setCurrentMoisture(val));
 
     // Polling cập nhật độ ẩm hiển thị (mỗi 30s)
+    // Và thực hiện mô phỏng đọc cảm biến (theo yêu cầu)
     const monitorInterval = setInterval(() => {
        fetchCurrentMoisture().then(val => setCurrentMoisture(val));
+       handleSimulateSensorRead();
     }, 30000);
 
     // NOTE: Logic triggerReadSensorESP32 (POST giả lập dữ liệu mỗi 5 phút) đã được chuyển sang App.tsx
@@ -247,53 +295,6 @@ const ControlPage: React.FC = () => {
       console.error("Save settings error:", error);
       alert("Không thể kết nối đến máy chủ.");
       setSaveStatus('idle');
-    }
-  };
-
-  // --- HÀM MỚI: MÔ PHỎNG ĐỌC CẢM BIẾN ---
-  const handleSimulateSensorRead = async () => {
-    setIsReadingSensor(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-        navigate('/auth/login');
-        return;
-    }
-
-    try {
-      // Payload theo yêu cầu
-      const payload = {
-        nhiet_do: "30",
-        do_am_khong_khi: "65",
-        do_am_dat: "70",
-        muc_nuoc: "250",
-        anh_sang: "200",
-        // Thêm created_at để đảm bảo tính chính xác nếu backend cần
-        created_at: formatDateForApi(new Date()) 
-      };
-
-      console.log("Simulating Sensor Read:", payload);
-
-      const response = await fetch('http://localhost:8000/api/sensors', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-         // Cập nhật ngay UI với giá trị mới
-         setCurrentMoisture(70); 
-      } else {
-         console.error("Lỗi khi gọi API sensors:", response.status);
-         alert("Không thể lưu dữ liệu cảm biến");
-      }
-    } catch (e) {
-      console.error("Lỗi kết nối:", e);
-      alert("Lỗi kết nối đến máy chủ");
-    } finally {
-      setIsReadingSensor(false);
     }
   };
 
