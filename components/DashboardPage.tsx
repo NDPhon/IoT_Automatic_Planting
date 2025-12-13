@@ -64,7 +64,7 @@ const DashboardPage: React.FC = () => {
     const intervalId = setInterval(() => {
       fetchSensorData();
       fetchSystemAndDeviceStatus();
-    }, 60 * 1000);
+    }, 30 * 1000);
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
@@ -493,7 +493,7 @@ const DashboardPage: React.FC = () => {
             </ResponsiveContainer>
           </div>
           <div className="mt-4 text-center">
-             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây - GMT+7) - Cập nhật tự động mỗi 5 phút</p>
+             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây - GMT+7) - Cập nhật tự động mỗi 30 Giây</p>
           </div>
         </div>
 
