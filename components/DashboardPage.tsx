@@ -68,11 +68,11 @@ const DashboardPage: React.FC = () => {
     fetchSensorData(); // Then load current status
     fetchSystemAndDeviceStatus(); // Load system config and device status
 
-    // 3. Setup Polling (Auto-refresh every 30 seconds)
+    // 3. Setup Polling (Auto-refresh every 2 seconds for Real-time feel)
     const intervalId = setInterval(() => {
       fetchSensorData();
       fetchSystemAndDeviceStatus();
-    }, 30 * 1000);
+    }, 2000);
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
@@ -169,8 +169,7 @@ const DashboardPage: React.FC = () => {
   const fetchSensorData = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      console.warn("No token found, redirecting to login...");
-      navigate('/auth/login');
+      // Don't redirect immediately in interval to avoid loops if token missing briefly
       return;
     }
 
@@ -197,7 +196,7 @@ const DashboardPage: React.FC = () => {
       try {
         jsonData = JSON.parse(responseText);
       } catch (e) {
-        console.error("Invalid JSON response:", responseText);
+        // console.error("Invalid JSON response:", responseText);
         return;
       }
 
@@ -249,8 +248,6 @@ const DashboardPage: React.FC = () => {
           });
         }
 
-      } else {
-        console.error("API response format not recognized:", jsonData);
       }
 
     } catch (error) {
@@ -548,7 +545,7 @@ const DashboardPage: React.FC = () => {
             </ResponsiveContainer>
           </div>
           <div className="mt-4 text-center">
-             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây - GMT+7) - Cập nhật tự động mỗi 30 Giây</p>
+             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây - GMT+7) - Cập nhật tự động mỗi 2 Giây</p>
           </div>
         </div>
 

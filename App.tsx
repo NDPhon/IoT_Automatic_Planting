@@ -152,8 +152,8 @@ const App: React.FC = () => {
       }
     };
 
-    // Thiết lập interval chạy mỗi 30 giây (30,000 ms)
-    const intervalId = setInterval(triggerReadSensorESP32, 30 * 1000);
+    // Thiết lập interval chạy mỗi 5 giây (5,000 ms) thay vì 30s để hệ thống phản hồi nhanh
+    const intervalId = setInterval(triggerReadSensorESP32, 5 * 1000);
 
     // Gọi ngay một lần khi app load (nếu đã đăng nhập)
     triggerReadSensorESP32();
