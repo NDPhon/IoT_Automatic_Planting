@@ -10,7 +10,8 @@ import {
   Save, 
   Activity, 
   AlertCircle,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +23,7 @@ const ControlPage: React.FC = () => {
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMoisture, setCurrentMoisture] = useState(0); // State cho độ ẩm thực tế
+  const [isReadingSensor, setIsReadingSensor] = useState(false); // State loading cho nút đọc cảm biến
 
   // Ref để lưu trạng thái phiên tưới (khi bật bơm)
   // startMoisture: độ ẩm lúc bắt đầu bật bơm
@@ -245,6 +247,53 @@ const ControlPage: React.FC = () => {
       console.error("Save settings error:", error);
       alert("Không thể kết nối đến máy chủ.");
       setSaveStatus('idle');
+    }
+  };
+
+  // --- HÀM MỚI: MÔ PHỎNG ĐỌC CẢM BIẾN ---
+  const handleSimulateSensorRead = async () => {
+    setIsReadingSensor(true);
+    const token = localStorage.getItem('token');
+    if (!token) {
+        navigate('/auth/login');
+        return;
+    }
+
+    try {
+      // Payload theo yêu cầu
+      const payload = {
+        nhiet_do: "30",
+        do_am_khong_khi: "65",
+        do_am_dat: "70",
+        muc_nuoc: "250",
+        anh_sang: "200",
+        // Thêm created_at để đảm bảo tính chính xác nếu backend cần
+        created_at: formatDateForApi(new Date()) 
+      };
+
+      console.log("Simulating Sensor Read:", payload);
+
+      const response = await fetch('http://localhost:8000/api/sensors', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+         // Cập nhật ngay UI với giá trị mới
+         setCurrentMoisture(70); 
+      } else {
+         console.error("Lỗi khi gọi API sensors:", response.status);
+         alert("Không thể lưu dữ liệu cảm biến");
+      }
+    } catch (e) {
+      console.error("Lỗi kết nối:", e);
+      alert("Lỗi kết nối đến máy chủ");
+    } finally {
+      setIsReadingSensor(false);
     }
   };
 
@@ -664,6 +713,20 @@ const ControlPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* BUTTON MÔ PHỎNG ĐỌC CẢM BIẾN */}
+              <button 
+                onClick={handleSimulateSensorRead}
+                disabled={isReadingSensor}
+                className="w-full mb-6 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+              >
+                {isReadingSensor ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={16} />
+                )}
+                {isReadingSensor ? 'Đang đọc & lưu...' : 'Mô Phỏng Đọc Cảm Biến'}
+              </button>
 
               {/* System Logs / Alerts - Reflecting Real State */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
