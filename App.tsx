@@ -9,9 +9,9 @@ import ChatbotPage from './components/ChatbotPage';
 
 const App: React.FC = () => {
 
-  // --- GLOBAL BACKGROUND TASK: SIMULATE ESP32 SENSOR READING ---
+  // --- GLOBAL BACKGROUND TASK: SYNC REAL SENSOR DATA FROM ESP32 ---
   useEffect(() => {
-    // Helper: Format Date for API
+    // Helper: Format Date for API (YYYY-MM-DD HH:mm:ss)
     const formatDateForApi = (date: Date) => {
       const formatter = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Asia/Ho_Chi_Minh',
@@ -20,13 +20,14 @@ const App: React.FC = () => {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
+        second: '2-digit',
         hour12: false
       });
 
       const parts = formatter.formatToParts(date);
       const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value || '';
       
-      return `${getPart('year')}-${getPart('month')}-${getPart('day')} ${getPart('hour')}:${getPart('minute')}`;
+      return `${getPart('year')}-${getPart('month')}-${getPart('day')} ${getPart('hour')}:${getPart('minute')}:${getPart('second')}`;
     };
 
     const triggerReadSensorESP32 = async () => {
@@ -35,18 +36,44 @@ const App: React.FC = () => {
       if (!token) return;
 
       try {
+        // 1. GET dữ liệu thực tế từ ESP32 (Endpoint Group 7)
+        const getResponse = await fetch('http://localhost:8000/api/sensors/group7', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!getResponse.ok) {
+           console.warn(`[Global] Không thể lấy dữ liệu từ ESP32: ${getResponse.statusText}`);
+           return;
+        }
+
+        const resJson = await getResponse.json();
+
+        // Kiểm tra cấu trúc dữ liệu trả về
+        if (!resJson || !resJson.data) {
+           console.warn("[Global] Dữ liệu ESP32 trả về không đúng định dạng mong đợi.");
+           return;
+        }
+
+        const data = resJson.data;
         const now = new Date();
         const formattedTime = formatDateForApi(now);
 
+        // 2. Chuẩn bị payload để lưu vào lịch sử (POST /api/sensors)
+        // Mapping dữ liệu từ response của GET sang payload của POST
         const payload = {
-          nhiet_do: "25",
-          do_am_khong_khi: "65",
-          do_am_dat: "60",
-          muc_nuoc: "250",
-          anh_sang: "200",
+          nhiet_do: data.temperature_humidity?.temperature?.toString() || "0",
+          do_am_khong_khi: data.temperature_humidity?.humidity_air?.toString() || "0",
+          do_am_dat: data.soil_light?.humidity_soil?.toString() || "0",
+          muc_nuoc: data.water_level?.water_percent?.toString() || "0",
+          anh_sang: data.soil_light?.light_raw?.toString() || "0",
           created_at: formattedTime
         };
 
+        // 3. Gọi API lưu dữ liệu (POST)
         await fetch('http://localhost:8000/api/sensors', {
           method: 'POST',
           headers: {
@@ -55,14 +82,18 @@ const App: React.FC = () => {
           },
           body: JSON.stringify(payload)
         });
-        console.log("[Global] Đã gọi API đọc dữ liệu ESP32 (Background Task):", payload);
+        console.log("[Global] Đã đồng bộ dữ liệu từ ESP32 thành công:", payload);
+
       } catch (e) {
-        console.error("[Global] Lỗi khi gọi API đọc dữ liệu ESP32:", e);
+        console.error("[Global] Lỗi khi đồng bộ dữ liệu ESP32:", e);
       }
     };
 
-    // Thiết lập interval chạy mỗi 5 phút (300,000 ms)
+    // Thiết lập interval chạy mỗi 30 giây (30,000 ms)
     const intervalId = setInterval(triggerReadSensorESP32, 30 * 1000);
+
+    // Gọi ngay một lần khi app load (nếu đã đăng nhập)
+    triggerReadSensorESP32();
 
     // Dọn dẹp interval khi App unmount (thường chỉ khi tắt tab)
     return () => clearInterval(intervalId);

@@ -31,9 +31,9 @@ const HistoryPage: React.FC = () => {
 
   // Mock stats (giữ nguyên hoặc tính toán dựa trên page hiện tại, 
   // vì API phân trang không trả về tổng số liệu thống kê toàn hệ thống)
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<{ totalCount: number; avgDuration: string }>({
     totalCount: 0,
-    avgDuration: 0,
+    avgDuration: "0s",
   });
 
   useEffect(() => {
@@ -70,12 +70,41 @@ const HistoryPage: React.FC = () => {
       if (response.ok && jsonData.code === 200) {
         setHistoryData(jsonData.data || []);
         
-        // Cập nhật thống kê sơ bộ dựa trên trang hiện tại (tạm thời)
+        // Cập nhật thống kê sơ bộ dựa trên trang hiện tại
         if (jsonData.data && jsonData.data.length > 0) {
-            const currentTotalDuration = jsonData.data.reduce((acc: number, item: HistoryLog) => acc + (item.duration?.minutes || 0), 0);
+            // Tính tổng thời gian bằng mili giây dựa trên start_time và end_time
+            const totalMs = jsonData.data.reduce((acc: number, item: HistoryLog) => {
+                const start = new Date(item.start_time).getTime();
+                const end = new Date(item.end_time).getTime();
+                if (!isNaN(start) && !isNaN(end)) {
+                    // Đảm bảo không cộng số âm
+                    const diff = end - start;
+                    return acc + (diff > 0 ? diff : 0);
+                }
+                return acc;
+            }, 0);
+            
+            const avgMs = totalMs / jsonData.data.length;
+            const totalSeconds = Math.floor(avgMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+
+            let formattedAvg = "";
+            if (minutes > 0) {
+                formattedAvg = `${minutes}p ${seconds}s`;
+            } else {
+                formattedAvg = `${seconds}s`;
+            }
+
             setStats({
                 totalCount: jsonData.data.length, // Số lượng trên trang này
-                avgDuration: Math.round(currentTotalDuration / jsonData.data.length),
+                avgDuration: formattedAvg,
+            });
+        } else {
+            // Reset nếu không có dữ liệu
+            setStats({
+                totalCount: 0,
+                avgDuration: "0s"
             });
         }
       } else {
@@ -164,7 +193,6 @@ const HistoryPage: React.FC = () => {
               <div className="flex flex-col items-center justify-center p-2">
                 <div className="flex items-baseline gap-1 mb-2">
                   <span className="text-4xl font-bold text-green-500">{stats.avgDuration}</span>
-                  <span className="text-lg text-green-600 font-medium">phút</span>
                 </div>
                 <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">TB Thời gian</span>
               </div>
