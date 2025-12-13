@@ -119,6 +119,7 @@ const App: React.FC = () => {
               const isDark = currentLight < config.light_threshold;
               const hasWater = currentWater > 10; // Giả định < 10% là cạn
 
+              // Logic AND: Tất cả điều kiện phải thỏa mãn mới tưới
               const shouldWater = isSoilDry && isAirDry && isHot && isDark && hasWater;
 
               console.log(`[Logic Check] Soil: ${isSoilDry}, Air: ${isAirDry}, Hot: ${isHot}, Dark: ${isDark}, Water: ${hasWater} => SHOULD WATER: ${shouldWater}`);
