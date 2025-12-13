@@ -88,9 +88,10 @@ const DashboardPage: React.FC = () => {
         'Content-Type': 'application/json'
       };
 
+      // Thêm timestamp `_t` để tránh browser cache request
       const [systemRes, deviceRes] = await Promise.all([
-        fetch('http://localhost:8000/api/system/get', { headers }),
-        fetch('http://localhost:8000/api/device/get', { headers })
+        fetch(`http://localhost:8000/api/system/get?_t=${Date.now()}`, { headers }),
+        fetch(`http://localhost:8000/api/device/get?_t=${Date.now()}`, { headers })
       ]);
 
       // Xử lý System Config
@@ -112,7 +113,12 @@ const DashboardPage: React.FC = () => {
         const deviceJson = await deviceRes.json();
         if (deviceJson.code === 200 && deviceJson.data) {
           setIsAutoMode(deviceJson.data.mode === 'AUTO');
-          setPumpStatus(deviceJson.data.pump_status === 'ON');
+          
+          // Xử lý linh hoạt trạng thái bơm: chấp nhận cả 'ON', 1, '1', true
+          const rawPump = deviceJson.data.pump_status;
+          const isPumpRunning = rawPump === 'ON' || rawPump === 1 || rawPump === '1' || rawPump === true;
+          
+          setPumpStatus(isPumpRunning);
         }
       }
 
@@ -174,8 +180,8 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-      // Updated to new endpoint
-      const response = await fetch('http://localhost:8000/api/sensors/current', {
+      // Updated to new endpoint - Add timestamp to prevent caching
+      const response = await fetch(`http://localhost:8000/api/sensors/current?_t=${Date.now()}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

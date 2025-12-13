@@ -42,7 +42,7 @@ const App: React.FC = () => {
 
       try {
         // --- BƯỚC 1: GET dữ liệu thực tế từ ESP32 ---
-        const getResponse = await fetch('http://localhost:8000/api/sensors/group7', {
+        const getResponse = await fetch(`http://localhost:8000/api/sensors/group7?_t=${Date.now()}`, {
           method: 'GET',
           headers: headers
         });
@@ -89,9 +89,10 @@ const App: React.FC = () => {
 
         // --- BƯỚC 3: XỬ LÝ LOGIC TỰ ĐỘNG (AUTO MODE) ---
         // Lấy Cấu hình hệ thống (Thresholds) và Trạng thái thiết bị (Mode/Pump)
+        // Thêm timestamp để tránh cache
         const [systemRes, deviceRes] = await Promise.all([
-          fetch('http://localhost:8000/api/system/get', { headers }),
-          fetch('http://localhost:8000/api/device/get', { headers })
+          fetch(`http://localhost:8000/api/system/get?_t=${Date.now()}`, { headers }),
+          fetch(`http://localhost:8000/api/device/get?_t=${Date.now()}`, { headers })
         ]);
 
         if (systemRes.ok && deviceRes.ok) {
@@ -124,7 +125,9 @@ const App: React.FC = () => {
 
               console.log(`[Logic Check] Soil: ${isSoilDry}, Air: ${isAirDry}, Hot: ${isHot}, Dark: ${isDark}, Water: ${hasWater} => SHOULD WATER: ${shouldWater}`);
 
-              const isPumpOn = device.pump_status === 'ON';
+              // Xử lý kiểm tra trạng thái bơm linh hoạt (cả số và chữ)
+              const rawPump = device.pump_status;
+              const isPumpOn = rawPump === 'ON' || rawPump === 1 || rawPump === '1' || rawPump === true;
 
               if (shouldWater && !isPumpOn) {
                 // Điều kiện thỏa mãn mà bơm đang tắt -> BẬT BƠM
