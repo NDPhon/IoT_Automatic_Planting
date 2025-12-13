@@ -254,9 +254,9 @@ const DashboardPage: React.FC = () => {
     navigate('/auth/login');
   };
 
-  // Logic to determine if it is "Day" or "Night" based on light sensor
-  // Assuming Light > 100 is Day
-  const isDaytime = sensorData.light > 100;
+  // Logic to determine if it is "Day" or "Night" based on light sensor (0-100)
+  // Ngưỡng 40: > 40 là sáng, <= 40 là tối
+  const isDaytime = sensorData.light > 40;
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -400,9 +400,9 @@ const DashboardPage: React.FC = () => {
 
           {/* Card 3: Environment Sensors */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-6 border-b border-gray-100 pb-2">Môi trường Không khí</h2>
+            <h2 className="text-lg font-semibold text-gray-700 mb-6 border-b border-gray-100 pb-2">Môi trường & Bể nước</h2>
             
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-4">
               
               {/* Temperature */}
               <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-red-50 transition-colors group">
@@ -434,8 +434,26 @@ const DashboardPage: React.FC = () => {
                 <div>
                   <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">Ánh sáng</p>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold text-gray-800">{sensorData.light}</p>
+                    <p className="text-3xl font-bold text-gray-800">{sensorData.light}<span className="text-lg text-gray-500 ml-0.5">%</span></p>
                     <span className="text-sm text-gray-500 font-medium">{isDaytime ? 'Sáng' : 'Tối'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Water Level */}
+              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-blue-50 transition-colors group border-t border-gray-50 mt-1">
+                <div className={`p-3 rounded-full transition-colors ${sensorData.waterLevel < 20 ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500 group-hover:bg-blue-200'}`}>
+                  <Waves size={24} />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">Mực nước bể</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className={`text-3xl font-bold ${sensorData.waterLevel < 20 ? 'text-red-600' : 'text-gray-800'}`}>
+                      {sensorData.waterLevel}<span className="text-lg text-gray-500 ml-0.5">%</span>
+                    </p>
+                    {sensorData.waterLevel < 20 && (
+                       <span className="text-xs font-bold text-red-500 animate-pulse">Sắp cạn!</span>
+                    )}
                   </div>
                 </div>
               </div>
