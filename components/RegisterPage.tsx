@@ -66,8 +66,21 @@ const RegisterPage: React.FC = () => {
       // Parse JSON only if success
       const data = responseText ? JSON.parse(responseText) : {};
 
-      alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
-      navigate('/auth/login');
+      // Kịch bản: Nếu API trả về Token ngay sau khi đăng ký (Auto Login)
+      if (data.code === 200 && data.data && data.data.token) {
+        const token = data.data.token;
+        localStorage.setItem('token', token);
+        localStorage.setItem('username', formData.username);
+        
+        console.log("DEBUG: Register success with Token. Auto-redirecting to Dashboard...");
+        alert('Đăng ký thành công! Đang vào hệ thống...');
+        navigate('/dashboard');
+      } else {
+        // Kịch bản cũ (Fallback): Nếu không có token, yêu cầu đăng nhập lại
+        alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
+        navigate('/auth/login');
+      }
+
     } catch (err: any) {
       console.error("Register error:", err);
       // Kiểm tra lỗi CORS
