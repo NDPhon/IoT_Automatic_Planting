@@ -72,7 +72,7 @@ const DashboardPage: React.FC = () => {
     const intervalId = setInterval(() => {
       fetchSensorData();
       fetchSystemAndDeviceStatus();
-    }, 2000);
+    }, 3500);
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
