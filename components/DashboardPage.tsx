@@ -551,7 +551,7 @@ const DashboardPage: React.FC = () => {
             </ResponsiveContainer>
           </div>
           <div className="mt-4 text-center">
-             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây - GMT+7) - Cập nhật tự động mỗi 2 Giây</p>
+             <p className="text-xs text-gray-400">Thời gian (Giờ:Phút:Giây - GMT+7) - Cập nhật tự động mỗi 3.5 Giây</p>
           </div>
         </div>
 
